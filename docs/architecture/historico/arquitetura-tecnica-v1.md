@@ -1,13 +1,13 @@
-# Arquitetura Técnica — Consolidada
-## Sistema Financeiro/Gerencial H Vieira Terraplanagem
+> **Documento histórico — preservado sem alteração.** Esta é a versão original de `arquitetura-tecnica.md`, anterior à consolidação com `arbitragem-tecnica-final.md`. Não é mais a fonte corrente — consulte `architecture/arquitetura-tecnica.md` para a versão consolidada e vigente. Mantido aqui só como registro histórico de como o documento evoluiu.
 
-**Fonte de verdade conceitual**: `arquitetura-conceitual.md`. Este documento **não altera nenhuma regra de negócio, entidade ou relacionamento** definido lá — ele traduz esse modelo em decisões de engenharia. Onde este documento e o conceitual divergirem em algo que **não seja** puramente técnico (linguagem, framework, banco físico, infra, UX), o conceitual prevalece e este documento está errado.
+---
 
-**Fonte de verdade do modelo de dados**: as 24 entidades em `domain-model/`, já com as decisões de consolidação incorporadas. Este documento não repete a forma de nenhuma entidade — só referencia.
+# Arquitetura_Tecnica.md
+## Arquitetura Técnica — Sistema Financeiro/Gerencial H Vieira Terraplanagem
 
-**Fonte de verdade dos princípios de modelagem**: `principios-de-modelagem.md`.
+**Fonte de verdade conceitual**: `H_VIEIRA_Arquitetura_Definitiva.md`. Este documento **não altera nenhuma regra de negócio, entidade ou relacionamento** definido lá — ele traduz esse modelo em decisões de engenharia. Onde este documento e o conceitual divergirem em algo que **não seja** puramente técnico (linguagem, framework, banco físico, infra, UX), o conceitual prevalece e este documento está errado.
 
-**Natureza deste documento**: consolida a arquitetura técnica original com as mudanças já ratificadas pela arbitragem técnica (`arbitragem-tecnica-final.md`) e com as decisões já incorporadas ao modelo de domínio. Nenhuma linha de código, schema, SQL, classe ou endpoint foi criada. Onde existe mais de uma opção tecnicamente válida ainda sem decisão, isso permanece registrado na Seção 15. A versão original deste documento, anterior a esta consolidação, e o próprio processo de auditoria/réplica/arbitragem que a originou, estão preservados como histórico (`arquitetura-tecnica-v1.md`, `auditoria-critica-arquitetura-tecnica.md`, `replica-tecnica-auditoria-critica.md`, `arbitragem-tecnica-final.md`).
+**Natureza deste documento**: nenhuma linha de código, schema, SQL, classe ou endpoint foi criada. Onde existe mais de uma opção tecnicamente válida, as opções são apresentadas com vantagens/desvantagens e a decisão fica em aberto para você (Seção 15 consolida todas).
 
 ---
 
@@ -161,15 +161,6 @@ Princípios que mais pesam na decisão técnica adiante: **fonte única da verda
 
 Isso é uma recomendação, não uma decisão tomada — está listada na Seção 15 para sua aprovação, porque é a decisão que mais influencia a estrutura de pastas (Seção 6) e o ritmo de implementação.
 
-### Critério de proporcionalidade (arbitragem técnica, Divergência 1 — mudança obrigatória já incorporada)
-
-A Clean Architecture recomendada acima não deve ser aplicada uniformemente a todo o sistema. Dois perfis de módulo:
-
-- **Núcleo com invariante**: módulos com pelo menos uma regra de negócio real a proteger — cadeia financeira central (Lançamento, Liquidação, Aplicação), Conciliação, Cartão, Financiamento/Consórcio, Rateio, Ajuste Financeiro, e os estados de IA (Sugestão/Ação) — mantêm domain + application + infrastructure completos.
-- **Cadastro simples**: módulos de referência sem regra de negócio própria além de obrigatoriedade/unicidade — Empresa, Cliente, Fornecedor, Conta Bancária **e Categoria** — podem colapsar domain+application num caso de uso leve por operação, mantendo ainda um repositório/porta de persistência.
-
-**Nota de atualização em relação à arbitragem original**: a arbitragem (Divergência 1) havia mantido `Categoria` no perfil "núcleo com invariante", especificamente porque a pendência 4 do conceitual (possível separação em "natureza do gasto" × "sub-conta interna") ainda estava em aberto. Essa pendência foi resolvida no modelo de domínio (`domain-model/06-categoria.md`, Seção 7) — decidido manter `Categoria` sem separação, por não existir definição de negócio para a dimensão hipotética. Com a premissa que justificava a exceção removida, `Categoria` é reclassificada aqui para o perfil "cadastro simples". Esta reclassificação é consequência direta da decisão já aprovada no domínio, não uma nova decisão de arquitetura.
-
 ---
 
 ## 5. STACK TECNOLÓGICA
@@ -246,36 +237,23 @@ Estrutura conceitual, independente da linguagem final escolhida (Seção 15), se
     /frota
     /rateio
     /ajuste-financeiro
-    /ia                     → só os estados de IA (Sugestão/Ação) — entidades de domínio por direito próprio,
-                               nunca "a IA" em si. Os contratos de "ferramenta de consulta" NÃO ficam aqui
-                               (correção da arbitragem técnica, Divergência 5 — ver /application/ia abaixo)
+    /ia                     → contratos de "ferramenta de consulta", Sugestão/Ação (estado, não execução)
     /auditoria
 
   /application                → casos de uso (orquestram entidades de domínio)
     /financeiro
       registrar-lancamento.*
       registrar-liquidacao.*
-      obter-status-financeiro-lancamento.*   → leitura/consulta; `status_financeiro` é sempre calculado,
-                                                 nunca escrito (decisão de consolidação do domínio)
-      alterar-situacao-administrativa.*       → único caso de uso de escrita para cancelamento; bloqueado
-                                                 se houver Aplicação de Liquidação vinculada (soma > 0)
+      calcular-status-lancamento.*
     /conciliacao
       importar-extrato.*
       vincular-movimentacao.*
     /cartao
       registrar-compra.*
-      fechar-fatura.*          → Cartão calcula/confirma o total do ciclo; escreve só em Fatura.
-                                  O pagamento invoca `financeiro/registrar-liquidacao.*` — este caso de uso
-                                  nunca cria Liquidação diretamente (mudança obrigatória, arbitragem
-                                  técnica, Divergência 6)
-    /consultas-financeiras      → módulo de leitura compartilhado: custo de obra, custo de veículo, saldo
-                                  devedor de contrato, e demais agregações — consumido por Balanço, Obra,
-                                  Frota e pelas ferramentas de consulta da IA, nunca reimplementado em cada
-                                  um separadamente (mudança obrigatória, arbitragem técnica, Divergência 2;
-                                  inclui o caso de uso de Frota, antes ausente)
+      fechar-fatura.*
+    /obra
+      calcular-custo-obra.*
     /ia
-      contratos-ferramenta-consulta.*   → schema do que a IA pode consultar (movido de domain/ia — correção
-                                          da Divergência 5); consome application/consultas-financeiras
       executar-ferramenta-consulta.*
       registrar-sugestao.*
       confirmar-acao-proposta.*   → aqui vive a barreira de confirmação (Baixo/Médio/Alto)
@@ -347,16 +325,22 @@ O conceitual já garante que qualquer formato de entrada resulta em `MOVIMENTAÇ
 
 ## 10. ESTRATÉGIA PARA AUDITORIA
 
-**Forma conceitual — resolvida** (`domain-model/24-log-auditoria.md`, Seção 7): `LOG_AUDITORIA` permanece uma única entidade, com referência genérica (`entidade` + `id`), restrita a uma lista fechada de entidades oficialmente auditáveis — nunca uma referência totalmente livre. A referência genérica existe só no nível conceitual e não flexibiliza nenhuma regra de negócio própria de cada mecanismo. Isso elimina, como opção técnica viável, a alternativa de "tabela de log dedicada por entidade" (que exigiria `LOG_AUDITORIA` deixar de ser uma única entidade) — ela é **incompatível** com a decisão já tomada, não apenas menos preferida.
-
-**Técnica de implementação exata — ainda em aberto**:
+O conceitual exige granularidade por campo desde a primeira versão do schema (não como melhoria futura) e deixa em aberto o mecanismo do vínculo genérico com "qualquer entidade financeira" (pendência 13 do conceitual). Opções técnicas:
 
 | Opção | Como funciona | Vantagens | Desvantagens |
 |---|---|---|---|
 | **Referência polimórfica** (`entidade_tipo` + `entidade_id` numa tabela única de log) | Uma tabela `LOG_AUDITORIA` genérica referencia qualquer entidade por tipo+id | Consulta "todo histórico de qualquer coisa" fica simples (uma tabela só); adicionar nova entidade auditável não exige nova tabela de log | Sem integridade referencial garantida pelo banco (FK não pode apontar para "tabela variável"); validação de que o `entidade_id` existe fica por conta da aplicação |
-| **Event Sourcing** | Auditoria é inerente ao modelo de dados, não uma tabela separada | Rastreabilidade máxima, "de fábrica" | Mudança de paradigma grande para o restante do sistema — desproporcional ao problema descrito no conceitual, que pede um log auditável, não um sistema orientado a eventos. Mantido aqui só por completude; já descartado como candidato real desde a arbitragem técnica |
+| **Tabela de log dedicada por entidade** | `LOG_LANCAMENTO`, `LOG_LIQUIDACAO`, etc., cada uma com FK real para sua entidade | Integridade referencial garantida pelo banco | Multiplica tabelas; consulta "todo histórico" exige unir várias tabelas; toda nova entidade auditável exige nova tabela |
+| **Event Sourcing** (o estado de cada entidade é reconstruído a partir de uma sequência de eventos, e o log é o próprio armazenamento primário) | Auditoria é inerente ao modelo de dados, não uma tabela separada | Rastreabilidade máxima, "de fábrica" | Mudança de paradigma grande para o restante do sistema (todas as entidades passariam a ser reconstituídas por eventos, não CRUD direto) — desproporcional ao problema descrito no conceitual, que pede um log auditável, não um sistema orientado a eventos |
 
-**Mecanismo de população do log — requisito resolvido pela arbitragem técnica (Divergência 3, mudança obrigatória), mecanismo exato ainda em aberto**: não é mais uma escolha entre "nível de aplicação" ou "nível de banco" tratados como alternativas — a arquitetura exige um mecanismo que seja **ao mesmo tempo automático** (nenhuma escrita relevante passa sem gerar log — elimina o risco de omissão) **e ciente do contexto de negócio** (captura a origem — Manual/Importação/Sugestão de IA Confirmada/Ação de IA Confirmada — informação que só existe no nível de aplicação). Um mecanismo automático aplicado a todo caso de uso de escrita (decorator, wrapper de "unit of work", ou equivalente) que **exija** o contexto de negócio como parâmetro obrigatório de entrada satisfaz as duas propriedades ao mesmo tempo — a dicotomia entre "automático sem contexto" e "manual com contexto" é falsa. O mecanismo técnico exato permanece decisão pendente (Seção 15); triggers de banco puros, sozinhos, não satisfazem o requisito de contexto de negócio e não são suficientes como mecanismo único.
+**Como o log é populado** — também decisão aberta:
+
+| Opção | Vantagens | Desvantagens |
+|---|---|---|
+| Nível de aplicação (a própria camada de aplicação grava o log ao processar o caso de uso) | Total controle sobre o que é registrado, inclusive contexto de negócio (qual Sugestão/Ação de IA originou) | Só funciona se toda escrita passar pela aplicação — nunca por acesso direto ao banco |
+| Nível de banco (triggers) | Captura qualquer escrita, mesmo fora da aplicação | Mais difícil de enriquecer com contexto de negócio (ex. "essa alteração veio de uma Sugestão de IA confirmada") |
+
+Recomendação de leitura, não decisão: dado que o conceitual já exige registrar a **origem** (Manual/Importação/Sugestão de IA Confirmada/Ação de IA Confirmada) — informação que só existe no nível de aplicação, não no banco — o log de aplicação tende a ser o único capaz de cumprir esse requisito específico por si só; triggers de banco poderiam complementar como camada de segurança adicional. Fica como decisão pendente (Seção 15).
 
 ---
 
@@ -374,8 +358,6 @@ O conceitual marca "usuários e níveis de permissão" como pendência de negóc
 | **ABAC (permissão por atributo/regra dinâmica)** | Máxima flexibilidade | Complexidade desproporcional ao tamanho descrito da operação (uso interno, poucas empresas, poucos usuários) |
 
 **Ponto que precisa de decisão de negócio, não só técnica**: os três níveis de confirmação da IA (Baixo/Médio/Alto, Seção 11 do conceitual) provavelmente devem se cruzar com o modelo de permissão — por exemplo, nem todo usuário com acesso ao Financeiro deveria necessariamente poder confirmar uma Ação de nível Alto. Isso deve ser decidido junto com a pendência 5 do conceitual, antes de desenhar o cadastro de usuários.
-
-**Mecanismo de checagem — requisito resolvido pela arbitragem técnica (Divergência 4, mudança obrigatória), modelo de permissão por trás ainda em aberto**: a checagem de permissão não pode depender de um único ponto de verificação opcional por caso de uso — precisa ser obrigatória, em **dois pontos distintos**: (i) autorização por ação, num guard de entrada, antes da camada de aplicação — cobre "o usuário pode fazer X?"; (ii) autorização por escopo de dado/Empresa, no ponto em que o registro-alvo é carregado (repositório ou início do caso de uso) — cobre "o usuário pode fazer X *neste* registro, desta Empresa específica?". O primeiro ponto sozinho não é suficiente porque a permissão por escopo de Empresa só pode ser verificada depois que o registro (ou sua referência de Empresa) é carregado. O modelo de permissão por trás (RBAC simples / RBAC + escopo por empresa / ABAC) continua decisão separada e pendente (Seção 15) — a exigência dos dois pontos de checagem vale independentemente de qual modelo for escolhido.
 
 ---
 
@@ -427,30 +409,26 @@ A ordem segue duas restrições do próprio conceitual: (a) auditoria deve exist
 
 ## 15. DECISÕES TÉCNICAS QUE PRECISAM DA SUA APROVAÇÃO
 
-Nenhuma delas foi decidida silenciosamente neste documento — todas estão registradas aqui explicitamente para sua decisão antes de qualquer implementação. **Itens já resolvidos pela consolidação do modelo de domínio ou pela arbitragem técnica foram atualizados ou removidos desta lista** (ver notas em cada linha afetada); os demais permanecem exatamente como estavam.
+Nenhuma delas foi decidida silenciosamente neste documento — todas estão registradas aqui explicitamente para sua decisão antes de qualquer implementação.
 
 | # | Decisão | Opções apresentadas | Onde está discutida |
 |---|---|---|---|
-| 1 | Estilo de arquitetura de software | MVC simples / Camadas (N-tier) / Clean Architecture / Hexagonal — **o critério de proporcionalidade entre os dois perfis de módulo já está resolvido (Seção 4, incluindo a reclassificação de Categoria); a escolha do estilo em si permanece pendente** | Seção 4 |
+| 1 | Estilo de arquitetura de software | MVC simples / Camadas (N-tier) / Clean Architecture / Hexagonal | Seção 4 |
 | 2 | Linguagem/framework de backend | Node.js+TypeScript (NestJS) / Python (FastAPI) / .NET (C#) | Seção 5.1 |
 | 3 | Framework de frontend | React (Next.js) / Vue 3 / Angular | Seção 5.2 |
 | 4 | Banco de dados físico | PostgreSQL / MySQL-MariaDB / SQL Server | Seção 5.3 |
 | 5 | ORM / camada de acesso a dados | Depende da decisão #2 (Prisma/TypeORM, SQLAlchemy, EF Core) | Seção 5.4 |
 | 6 | Estratégia de autenticação | Autenticação própria (JWT) / Provedor externo (Auth0, Clerk, Keycloak) | Seção 5.5 |
 | 7 | Hospedagem/infraestrutura | Em aberto, amarrada à decisão #2/#4 | Seção 5.6 |
-| 8 | Mecanismo exato da barreira "Alto" da IA (pendência 12 do conceitual) | Reautenticação / Segundo aprovador / Confirmação simples reforçada — **o escopo desta barreira ficou menor: `AJUSTE_FINANCEIRO` está definitivamente excluído do que a IA pode propor (`domain-model/23-acao-proposta-ia.md`), então o mecanismo só precisa cobrir criação/confirmação de `LIQUIDAÇÃO_FINANCEIRA` e ações equivalentes** | Seção 8 |
+| 8 | Mecanismo exato da barreira "Alto" da IA (pendência 12 do conceitual) | Reautenticação / Segundo aprovador / Confirmação simples reforçada | Seção 8 |
 | 9 | Orquestração da IA | Chamada direta ao SDK do provedor / Framework de orquestração de agentes | Seção 8 |
 | 10 | Provedor de IA específico | Não avaliado aqui — o conceitual (Seção 19) já deixa isso propositalmente em aberto como "modelo de mercado via API" | Seção 8 |
 | 11 | Momento e provedor de integração bancária futura (Open Finance) | Upload manual (já cobre hoje) / Agregador Open Finance / API direta do banco | Seção 9 |
-| 12 | Implementação técnica do vínculo genérico de auditoria (pendência 13 do conceitual) | **A forma conceitual já está resolvida (entidade única, referência genérica — `domain-model/24-log-auditoria.md`), eliminando "tabela dedicada por entidade" como opção viável.** Ainda pendente: Referência polimórfica / Event Sourcing (mantido só por completude, já considerado desproporcional) | Seção 10 |
-| 13 | Mecanismo técnico exato que popula o log de auditoria | **Já não é mais uma escolha entre "nível de aplicação" ou "nível de banco" tratados como alternativas — a arbitragem técnica exige um mecanismo simultaneamente automático e ciente de contexto de negócio (Seção 10). O mecanismo técnico exato permanece pendente.** | Seção 10 |
-| 14 | Modelo de permissões de usuário (pendência 5 do conceitual) | RBAC simples / RBAC + escopo por empresa / ABAC — **independente da escolha, a checagem deve ocorrer em dois pontos obrigatórios (por ação e por escopo de dado/Empresa — Seção 11)** | Seção 11 |
+| 12 | Implementação do vínculo genérico de auditoria (pendência 13 do conceitual) | Referência polimórfica / Tabela dedicada por entidade / Event Sourcing | Seção 10 |
+| 13 | Camada que popula o log de auditoria | Nível de aplicação / Nível de banco (triggers) / ambos | Seção 10 |
+| 14 | Modelo de permissões de usuário (pendência 5 do conceitual) | RBAC simples / RBAC + escopo por empresa / ABAC | Seção 11 |
 | 15 | Cruzamento entre papel de usuário e níveis de confirmação da IA | Não avaliado em detalhe — depende da decisão #14 e é também decisão de negócio | Seção 11 |
 | 16 | Ordem de implementação da IA (leitura → sugestão → ação) | Adotada como recomendação técnica neste documento, mas está listada como pendência de produto no conceitual (pendência 11) — precisa de confirmação explícita, não só herdar a recomendação | Seção 14 |
-
-**Item removido desta lista por já estar resolvido**: "Estratégia de cálculo do status do `LANÇAMENTO_FINANCEIRO`" — decidido (`domain-model/09-lancamento-financeiro.md`): `situação_administrativa` (persistida) e `status_financeiro` (sempre calculado, nunca armazenado) são dimensões independentes. Refletido na estrutura de pastas (Seção 6).
-
-**Itens de melhoria futura, registrados pela arbitragem técnica, ainda não decididos** (não bloqueiam implementação nesta fase): delimitar por escrito onde termina o vocabulário "Clean Architecture" e onde começa "porta/adaptador"; documentar, no plano de testes, o que cada camada de teste afirma para cenários compartilhados entre integração e aceitação; adicionar ferramenta de análise de dependência arquitetural à lista de decisões de stack quando a stack for escolhida; ao planejar a resolução de cada pendência de negócio do conceitual, classificá-la como comportamental ou estrutural antes de estimar esforço; priorizar estratégia de índice logo no início da Fase 3 (modelagem do banco), não adiar indefinidamente dentro dela.
 
 **Nenhuma implementação começa antes de eu receber suas respostas para os itens acima** (ou a indicação de quais você quer decidir agora e quais prefere adiar, respeitando a mesma lógica do documento conceitual: pendência não-bloqueante pode ficar registrada e revisitada antes da etapa específica que dependa dela).
 
