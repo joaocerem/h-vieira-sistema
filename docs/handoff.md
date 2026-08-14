@@ -194,3 +194,13 @@ Consultar **exclusivamente** `docs/pendencias.md` — 6 categorias (Domínio, Ar
 6. **Preferir sempre a menor alteração possível.**
 7. As **Etapas 5, 6 e 7** já foram concluídas (ver Seção 6) — a consolidação documental está encerrada e a Fase 2 terminou. O próximo passo é a **Fase 3** (modelagem física do banco de dados), mantendo o mesmo padrão de checkpoint já usado em toda a consolidação.
 8. Esta sessão usou um sistema interno de tarefas (Etapas 1-7 rastreadas como itens individuais) para acompanhar o progresso — todas concluídas. Se a próxima sessão avançar para a Fase 3, recrie um rastreamento equivalente para as etapas dessa nova fase.
+
+---
+
+## 13. NOTA — ÚLTIMA CORREÇÃO DOCUMENTAL DA FASE 3 (Implementação SQL)
+
+Após a releitura completa de `docs/plano-implementacao-sql.md`, já com `database/02_tables/`, `database/03_constraints.sql` e `database/04_indexes.sql` concluídos, e `05_views.sql`/`06_functions.sql`/`07_triggers.sql` formalmente adiados/descartados, foi encontrada **uma única inconsistência de completude**: a pendência **A5** (mecanismo técnico de auditoria automática) já era citada como bloqueio ativo na seção de Triggers do próprio plano, mas não aparecia na tabela "Pendências que permanecem abertas" do mesmo documento.
+
+A inconsistência foi confirmada e corrigida — `A5` foi acrescentada à tabela, deixando explícito que bloqueia exclusivamente `07_triggers.sql`, não `06_functions.sql` (já descartado por motivo independente).
+
+Esta foi a última correção documental realizada na Fase 3.
