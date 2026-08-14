@@ -1,5 +1,5 @@
 # HANDOFF — Projeto H. Vieira Sistema
-## Encerramento de sessão após conclusão das Etapas 1-7 da consolidação + correção pós-handoff
+## Encerramento de sessão após conclusão da Fase 2 (consolidação) e da Fase 3 (modelagem física do banco), com correções pontuais de consistência
 
 **Propósito deste documento**: permitir que uma nova sessão continue o projeto imediatamente, sem depender do histórico da conversa anterior. Leia este documento por completo antes de qualquer ação. **Não reabra nenhuma decisão aqui registrada como consolidada.**
 
@@ -11,12 +11,12 @@
 - Arquitetura técnica: concluída, auditada, arbitrada, e **consolidada** num único documento corrente.
 - Modelo de domínio (24 entidades): concluído, revisado (integridade + auditoria sistêmica), e **com todas as 11 pendências bloqueantes já resolvidas e incorporadas**.
 - Consolidação documental: **Etapas 1 a 7 concluídas — Fase 2 encerrada**, mais uma correção pontual de consistência feita após a Etapa 4 (ver Seção 9).
-- Modelagem física do banco de dados: **não iniciada**.
-- Código: **não iniciado**.
+- Modelagem física do banco de dados: **concluída** (Fase 3) — modelo lógico e convenções físicas definidos, e schema PostgreSQL implementado: `database/02_tables/`, `database/03_constraints.sql` e `database/04_indexes.sql` concluídos; `05_views.sql` **adiado**; `06_functions.sql` **descartado** (nenhuma function especificada em nenhum documento — a lógica correspondente vive na aplicação, por decisão arquitetural já congelada); `07_triggers.sql` **adiado** (ver Seção 13 e `pendencias.md`).
+- Backend e Frontend: **ainda não iniciados**.
 
 ## 2. FASE ATUAL
 
-**Consolidação da documentação — concluída** (Fase 2 do `roadmap.md`). As Etapas 1 a 7 do plano de consolidação foram concluídas. O próximo grande marco do projeto é a Fase 3 (modelagem física do banco de dados).
+**Fase 2 (consolidação da documentação) e Fase 3 (modelagem física do banco de dados) — ambas concluídas.** As Etapas 1 a 7 do plano de consolidação foram concluídas (Fase 2); o modelo lógico, a arquitetura física e a implementação do schema PostgreSQL — tabelas, constraints e índices — foram concluídos (Fase 3), com `05_views.sql` e `07_triggers.sql` formalmente adiados e `06_functions.sql` descartado (ver Seção 13 e `pendencias.md`). O próximo grande marco do projeto é a Fase 4 (Backend) — ver `roadmap.md`.
 
 ---
 
@@ -41,8 +41,13 @@
 5. **`architecture/arquitetura-tecnica.md`** — arquitetura técnica **consolidada** (não confundir com `arquitetura-tecnica-v1.md`, histórico).
 6. **`decisions.md`** — registro oficial de decisões. **Preenchido na Etapa 7** — as 11 decisões consolidadas, as duas resoluções adicionais da Etapa 3, e o índice dos 7 princípios de modelagem.
 7. **`pendencias.md`** — única fonte corrente de pendências abertas do projeto inteiro.
+8. **`modelo-logico.md`** — tradução das 24 entidades para modelo lógico (Fase 3, Etapa 3.1), sem nenhuma decisão física ainda.
+9. **`arquitetura-fisica-banco.md`** — convenções físicas globais do banco (Fase 3, Etapa 3.2): SGBD PostgreSQL (resolve `pendencias.md`, item B1), identificadores, nomenclatura.
+10. **`docs/modelagem-fisica/01-cadastros-basicos.md` a `09-ia-auditoria.md`** — modelagem física por entidade (Fase 3, Etapa 3.3), aplicando as convenções dos itens 8-9.
+11. **`plano-implementacao-sql.md`** — ordem de implementação do schema e registro formal dos itens adiados/descartados — views, functions, triggers (Fase 3, Etapa 3.4).
+12. **`database/02_tables/`, `database/03_constraints.sql`, `database/04_indexes.sql`** — schema físico implementado (Fase 3).
 
-Documentos de apoio, não normativos, mas ainda vigentes: `roadmap.md` e `changelog.md` (ambos atualizados na Etapa 6).
+Documentos de apoio, não normativos, mas ainda vigentes: `roadmap.md` e `changelog.md` (ambos atualizados na Etapa 6, com entradas até a Fase 2 apenas) e `freeze-fase-2.md` (marco formal de encerramento da Fase 2 e autorização de início da Fase 3).
 
 ---
 
@@ -96,7 +101,7 @@ Critérios aprovados para esta etapa, todos cumpridos: preservar todos os arquiv
 ### Etapa 7 — Preencher `decisions.md` (CONCLUÍDA)
 **Concluída.** `decisions.md` passou a ser o registro oficial e definitivo de decisões: as 11 decisões consolidadas (Seção 7 deste handoff), as duas resoluções adicionais da Etapa 3, e um índice dos 7 princípios de modelagem (referenciando `principios-de-modelagem.md`, sem duplicar conteúdo).
 
-**Com a Etapa 7 concluída, a Fase 2 está encerrada.** O próximo grande marco do projeto é iniciar a **modelagem física do banco de dados** (Fase 3) — ainda sem escrever código.
+**Com a Etapa 7 concluída, a Fase 2 está encerrada.** A **Fase 3** (modelagem física do banco de dados) também foi concluída nesta linha do tempo do projeto — ver Seção 1 e Seção 13. O próximo grande marco do projeto é a **Fase 4** (Backend).
 
 ---
 
@@ -192,8 +197,8 @@ Consultar **exclusivamente** `docs/pendencias.md` — 6 categorias (Domínio, Ar
 4. **Preservar o formato de relatório de 4 pontos** ao final de cada etapa (o que foi alterado; nova decisão? regra mudou? inconsistência encontrada?).
 5. **Nada é apagado.** Documentos superados viram histórico — nunca são removidos, mesmo na Etapa 5 (que é reorganização de pasta, não exclusão).
 6. **Preferir sempre a menor alteração possível.**
-7. As **Etapas 5, 6 e 7** já foram concluídas (ver Seção 6) — a consolidação documental está encerrada e a Fase 2 terminou. O próximo passo é a **Fase 3** (modelagem física do banco de dados), mantendo o mesmo padrão de checkpoint já usado em toda a consolidação.
-8. Esta sessão usou um sistema interno de tarefas (Etapas 1-7 rastreadas como itens individuais) para acompanhar o progresso — todas concluídas. Se a próxima sessão avançar para a Fase 3, recrie um rastreamento equivalente para as etapas dessa nova fase.
+7. As **Etapas 5, 6 e 7** já foram concluídas (ver Seção 6) — a consolidação documental está encerrada e a Fase 2 terminou. A **Fase 3** (modelagem física do banco de dados) também já foi concluída (ver Seção 1 e Seção 13). O próximo passo é a **Fase 4** (Backend), mantendo o mesmo padrão de checkpoint já usado nas fases anteriores.
+8. Esta sessão usou um sistema interno de tarefas (Etapas 1-7 rastreadas como itens individuais) para acompanhar o progresso — todas concluídas. Se a próxima sessão avançar para a Fase 4, recrie um rastreamento equivalente para as etapas dessa nova fase.
 
 ---
 
