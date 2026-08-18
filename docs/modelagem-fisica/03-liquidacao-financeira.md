@@ -3,7 +3,7 @@
 
 Tabela: `liquidacoes_financeiras`. Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5. Sem SQL.
 
-**Validação prévia**: realizada antes deste documento (ver mensagem anterior). Achado bloqueante único: **D12** (mutabilidade da entidade ainda não decidida) — tratado exclusivamente na Seção "Observações" abaixo, sem propor mecanismo provisório. O restante da tabela não depende de nenhuma pendência aberta.
+**Validação prévia**: realizada antes deste documento (ver mensagem anterior). D12 (mutabilidade) resolvida — imutável desde a criação (`decisions.md` decisão #33), tratado na Seção "Observações" abaixo. Nenhuma pendência aberta afeta esta tabela.
 
 ---
 
@@ -48,7 +48,7 @@ Nenhum — nenhum campo desta entidade tem valor padrão documentado.
 
 ## Observações
 
-- **Mutabilidade — D12, aberta.** Se uma Liquidação Financeira já registrada pode ser alterada, ou apenas estornada/substituída por uma nova, **não está decidido**. Nenhuma estratégia física de imutabilidade (trigger de bloqueio, revogação de privilégio de `UPDATE`, ou qualquer outra) é escolhida nesta etapa, nem provisoriamente. Nenhuma coluna desta tabela é classificada como imutável por inferência — essa classificação só será feita quando D12 for resolvida. Este item permanece registrado como pendência aberta, a ser incorporado a este documento quando decidido.
+- **Imutável após criação — confirmado (D12, `decisions.md` decisão #33).** Nenhum dos quatro campos (`tipo`, `data_efetiva`, `valor`, `conta_bancaria_id`) pode ser alterado depois de registrado, em nenhuma circunstância — consistente com o princípio 5 de modelagem e com o mesmo tratamento já dado a `APLICAÇÃO_DE_LIQUIDAÇÃO` (`04-aplicacao-de-liquidacao.md`). Mecanismo exato de bloqueio no schema (trigger ou revogação de privilégio) não escolhido nesta etapa — mesma reserva já aplicada em `02-lancamento-financeiro.md` e `04-aplicacao-de-liquidacao.md`. A decisão trata exclusivamente da mutabilidade — nenhum mecanismo de correção para erros pós-registro é definido ou pressuposto aqui.
 - **Transação atômica** (requisito já registrado em `arquitetura-tecnica.md` §5.3, não decisão nova desta etapa): registrar uma Liquidação e suas Aplicações de Liquidação deve ser tudo-ou-nada — implementação de camada de aplicação, sem impacto na estrutura de colunas/constraints desta tabela.
 - É o ponto da cadeia central em que a Conta Bancária é escolhida — nunca antes (regra 11 do conceitual); refletido pela obrigatoriedade de `conta_bancaria_id`.
 

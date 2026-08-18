@@ -55,7 +55,7 @@ Um por FK (`empresa_id`, `conta_bancaria_id`, `veiculo_id`) — política padrã
 
 ## Observações
 - **Saldo devedor não é campo desta tabela.** Sempre a soma das Parcelas ainda em aberto vinculadas a este Contrato (via `parcelas.contrato_financeiro_id`) — nunca `valor_contratado` menos pago (Decisão 9). Fora do escopo de `CHECK` (multi-tabela, multi-linha, camada de aplicação — `arquitetura-fisica-banco.md` §6); resolvido por consulta/view, nunca persistido.
-- **D6, aberta e não-bloqueante para o schema**: se o `veiculo_id` de um Consórcio contemplado deveria propagar automaticamente para o `LANÇAMENTO_FINANCEIRO` gerado quando uma Parcela vence não está definido. Não afeta a estrutura de colunas desta tabela — é regra de geração de Lançamento na camada de aplicação, a resolver antes do relatório de custo de Frota (Fase 4).
+- **D6, resolvida (`decisions.md`, decisão #28).** `veiculo_id` de um Consórcio contemplado propaga automaticamente para o `LANÇAMENTO_FINANCEIRO` gerado, só para Parcelas que vencem após a contemplação — sem propagação retroativa para Lançamentos já gerados. Não afeta a estrutura de colunas desta tabela — regra de geração de Lançamento na camada de aplicação.
 - `tipo` imutável por inferência estrutural — mecanismo exato de bloqueio no schema não escolhido nesta etapa, mesma reserva já usada nas tabelas anteriores.
 - Criação do Contrato e do parcelamento completo (Parcelas) deve ser atômica — requisito de camada de aplicação, mesmo padrão já usado para Compra Cartão e Liquidação+Aplicações.
 - Cada Parcela deste Contrato, ao vencer, sempre gera um `LANÇAMENTO_FINANCEIRO` (categoria "Amortização Empréstimo"/"Consórcios") — já modelado do lado de `parcelas` (`06-cartao-credito.md`); nenhuma constraint nova necessária aqui.

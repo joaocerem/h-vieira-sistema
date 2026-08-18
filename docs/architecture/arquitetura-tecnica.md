@@ -153,13 +153,15 @@ Princípios que mais pesam na decisão técnica adiante: **fonte única da verda
 | **Clean Architecture (camadas concêntricas: domínio → aplicação → infra/interfaces)** | Domínio (entidades + regras) no centro, sem dependência de framework/banco/IA; casos de uso na camada de aplicação; banco, web, IA como "detalhes" na borda | Regra de negócio testável sem banco nem framework; trocar banco, framework web ou provedor de IA não toca o domínio; fronteiras entre módulos podem ser impostas via módulos/pacotes internos | Mais boilerplate inicial; exige disciplina da equipe; para um sistema pequeno pode parecer "excesso de estrutura" no começo |
 | **Hexagonal / Ports & Adapters** | Mesma ideia da Clean Architecture, formalizada como "portas" (interfaces) que o domínio define e "adaptadores" que as implementam (banco, IA, importação bancária) | Mapeia quase 1:1 com o próprio texto conceitual: "a IA nunca acessa o banco diretamente — só ferramentas expostas pelo sistema" já É uma porta; trocar de "importação manual" para "Open Finance" (Seção 9) é só trocar um adaptador | Mesmo custo inicial da Clean Architecture; a diferença entre as duas na prática é mais de vocabulário/ênfase que de resultado final |
 
-### Recomendação
+### Decisão oficial (A1 — congelada)
 
-**Clean Architecture com fronteiras internas explícitas por módulo, usando o vocabulário de Ports & Adapters especificamente para os pontos que o documento conceitual já trata como fronteira controlada** (ferramentas de consulta da IA, importação de extrato bancário, e — futuramente — o provedor de IA e o provedor de Open Finance).
+**Clean Architecture com fronteiras internas explícitas por módulo, usando o vocabulário de Ports & Adapters especificamente para os pontos que o documento conceitual já trata como fronteira controlada** (ferramentas de consulta da IA, importação de extrato bancário, e — futuramente — o provedor de IA e o provedor de Open Finance). **Clean Architecture e Hexagonal/Ports & Adapters passam a ser tratadas, neste projeto, como uma única alternativa arquitetural** — a diferença entre as duas é de vocabulário/ênfase, não de resultado estrutural: ambas descrevem a mesma organização já detalhada na Seção 6.
 
 **Por quê**: os quatro princípios do domínio listados no início da Seção 1 deste documento (fonte única da verdade, nada é apagado, indicador sempre calculado, IA nunca escreve direto) são, estruturalmente, **regras de domínio que precisam sobreviver a qualquer troca de banco, framework ou provedor de IA**. Colocar essas regras no centro da arquitetura (não em controllers, não em triggers de banco) é a única opção das quatro que torna essas regras difíceis de violar por acidente — e não apenas "proibidas por convenção".
 
-Isso é uma recomendação, não uma decisão tomada — está listada na Seção 15 para sua aprovação, porque é a decisão que mais influencia a estrutura de pastas (Seção 6) e o ritmo de implementação.
+**Decisão congelada** — ver `decisions.md`, decisão #13. A estrutura de pastas da Seção 6 deixa de ser recomendação e passa a ser o **padrão oficial** do backend.
+
+**Nota (M1, `pendencias.md`, satisfeita documentalmente)**: o parágrafo acima já delimita por completo a relação entre os dois vocabulários — não há fronteira a desenhar entre "onde termina Clean Architecture e começa Ports & Adapters", porque os dois **são a mesma alternativa arquitetural**, diferindo só em ênfase nos pontos de fronteira controlada já citados. Nenhuma decisão nova — M1 fecha por remissão a esta decisão (#13).
 
 ### Critério de proporcionalidade (arbitragem técnica, Divergência 1 — mudança obrigatória já incorporada)
 
@@ -183,6 +185,9 @@ O documento conceitual (Seção 19) deixa deliberadamente em aberto: linguagem, 
 | **Node.js + TypeScript (NestJS)** | Tipagem estática ajuda muito num domínio com tantas entidades relacionadas; NestJS já organiza código em módulos com fronteiras explícitas (favorece a Seção 4); mesmo ecossistema de tipos pode ser reaproveitado no frontend; grande disponibilidade de SDKs para provedores de IA | Ecossistema mais "opinativo por convenção" que por imposição — decoradores do NestJS escondem parte da estrutura Clean Architecture se não houver disciplina |
 | **Python (FastAPI)** | Ecossistema de IA/dados é o mais maduro (útil se o "adaptador de IA" ou análises futuras crescerem); tipagem gradual (type hints) ajuda, mas é opcional, então exige mais disciplina; FastAPI é leve e rápido de escrever | Tipagem não é imposta pela linguagem — mais fácil "escapar" das fronteiras de módulo sem ferramentas extras (mypy estrito); menos natural para uma estrutura de camadas rígida sem convenção manual |
 | **.NET (C# + ASP.NET Core)** | Tipagem forte e madura; muito usado em sistemas financeiros corporativos; Entity Framework Core tem excelente suporte a migrations versionadas (Seção 13); bom encaixe natural com Clean Architecture (é quase o exemplo de livro-texto da comunidade .NET) | Ecossistema de IA (SDKs, exemplos, comunidade) é mais restrito que Node/Python; ambiente de desenvolvimento mais pesado |
+| **Java 21 LTS + Spring Boot** — **ESCOLHIDA (decisão oficial)** | Tipagem estática forte; ecossistema extremamente maduro para sistemas corporativos/financeiros; módulos Maven/Gradle impõem fronteira física entre camadas em tempo de build (mesmo mecanismo do .NET); Hibernate/JPA e Flyway/Liquibase entre os ORMs/ferramentas de migration mais maduros do mercado; maior volume de documentação/exemplos entre as quatro opções avaliadas — relevante para manutenção predominantemente solo | Ambiente de desenvolvimento mais pesado (JVM) — maior consumo de memória e tempo de inicialização; maior boilerplate inicial; ecossistema de IA (SDKs, exemplos) mais restrito que Node/Python |
+
+**Decisão oficial (T1 — congelada)**: **Java 21 LTS + Spring Boot**, com **Maven** como gerenciador de dependências e **Hibernate/JPA** (Spring Data JPA) como ORM principal. Java não fazia parte da comparação original acima — foi levantado posteriormente como candidato nunca analisado na documentação original (sem justificativa registrada para a ausência), avaliado nos mesmos critérios das outras três opções, e escolhido. Justificativa completa — incluindo as alternativas analisadas e o motivo real da escolha — registrada em `decisions.md`, decisão #12.
 
 ### 5.2 Frontend
 
@@ -206,6 +211,8 @@ O modelo é fortemente relacional: N:N entre Lançamento e Liquidação, integri
 
 ### 5.4 ORM / acesso a dados
 
+Comparação original, feita antes da definição de T1 — as quatro opções abaixo eram candidatas amarradas a cada uma das linguagens então em avaliação, preservadas aqui como registro histórico, não mais como candidatas ativas:
+
 | Opção | Vantagens | Desvantagens |
 |---|---|---|
 | **Prisma (Node/TS)** | Migrations versionadas muito claras, tipagem gerada automaticamente | Menos flexível para queries agregadas muito complexas (Balanço/custo de Obra podem precisar de SQL cru mesmo assim) |
@@ -213,7 +220,11 @@ O modelo é fortemente relacional: N:N entre Lançamento e Liquidação, integri
 | **SQLAlchemy (Python)** | Muito maduro, controle fino sobre queries agregadas | Curva de aprendizado maior, verboso |
 | **Entity Framework Core (.NET)** | Excelente suporte a migrations e integridade referencial | Só faz sentido se a stack for .NET |
 
-*(a escolha de ORM depende diretamente da escolha de linguagem/backend acima — não é uma decisão independente)*
+*(a escolha de ORM dependia diretamente da escolha de linguagem/backend acima — não era uma decisão independente)*
+
+**ORM principal, já decidido**: com T1 definida (Java 21 LTS + Spring Boot), o ORM correspondente é **Hibernate/JPA, via Spring Data JPA** — ver `decisions.md`, decisão #12. As quatro opções acima ficam preservadas só como registro histórico da comparação feita antes de T1; não são mais candidatas.
+
+**Única questão ainda existente (`pendencias.md`, item B2)**: não é mais escolha de tecnologia — é uma avaliação futura de implementação, sobre se as consultas agregadas mais complexas do domínio (custo de Obra, custo de Veículo, saldo devedor de Contrato) vão precisar de uma estratégia complementar ao Spring Data JPA (ex. jOOQ). O módulo de consultas compartilhadas (A6) já está desenhado em nível arquitetural (Seção 6; `decisions.md`, decisão #35) — falta só existir um caso real para essa avaliação fazer sentido.
 
 ### 5.5 Autenticação e autorização
 
@@ -224,9 +235,11 @@ O modelo é fortemente relacional: N:N entre Lançamento e Liquidação, integri
 
 **Observação**: como o sistema é interno (não tem cadastro público de usuários), uma solução própria simples com JWT tende a ser suficiente e evita dependência externa para dados financeiros sensíveis — mas fica como decisão pendente, não escolha feita.
 
+**Decisão oficial (T3 — congelada)**: **autenticação própria** — usuário/senha, com **Spring Security** e **JWT** como mecanismo de autenticação. Hash de senha com **Argon2** (preferencial); bcrypt permanece como alternativa apenas caso surja impedimento técnico documentado ao usar Argon2. **Nenhum provedor externo** (Auth0, Clerk, Keycloak) — descartados por desalinhamento com o perfil do sistema (interno, sem cadastro público, poucos usuários, sem necessidade documentada de SSO entre múltiplos sistemas do grupo). Justificativa completa registrada em `decisions.md`, decisão #14.
+
 ### 5.6 Hospedagem / infraestrutura
 
-Fora do escopo definir agora em detalhe (o conceitual já marca isso como decisão futura, Seção 19), mas a escolha de banco/backend acima deve ser compatível com hospedagem de baixo custo operacional (VPS simples, ou serviços gerenciados tipo Railway/Render/Azure/AWS RDS) — a decidir junto com a stack.
+**Decisão oficial (T4 — congelada, nível arquitetural)**: a implantação inicial prioriza uma **plataforma PaaS gerenciada** (categoria — ex. Railway, Render ou equivalente), reduzindo ao máximo a carga operacional; a escolha do provedor específico permanece **decisão operacional**, podendo mudar sem impacto na arquitetura. VPS e provedores de maior porte (AWS, Azure ou equivalente) continuam compatíveis com a stack já congelada (Java 21 + Spring Boot + PostgreSQL), mas não são a estratégia inicial — migração para eles só deve ocorrer quando houver necessidade real de escala, disponibilidade, integrações ou requisitos operacionais que a justifiquem. Nenhum provedor específico é escolhido por esta decisão. Justificativa completa registrada em `decisions.md`, decisão #38.
 
 ---
 
@@ -300,6 +313,10 @@ Estrutura conceitual, independente da linguagem final escolhida (Seção 15), se
 
 **Regra estrutural que implementa a Seção 13 do conceitual**: o módulo `domain/obra` e `domain/frota` não devem conter nenhuma operação de escrita sobre Lançamento — apenas leitura/agregação. Isso deve ser garantido por não expor, nesses módulos, nenhuma dependência para os casos de uso de escrita de `application/financeiro`. Da mesma forma, `domain/ia` nunca deve ter acesso de escrita direto às pastas de `lancamento-financeiro`, `liquidacao-financeira` ou `conciliacao-bancaria` — só aos casos de uso de leitura e aos seus próprios estados pendentes.
 
+**Decisão oficial (mecanismo do módulo `application/consultas-financeiras` — congelada)**: implementado como um serviço de aplicação (Application Service/Facade), com componentes Spring (`@Service`) que compõem os resultados de repositórios Spring Data JPA (Hibernate/JPA). Decisão técnica independente, registrada sem código de pendência associado (`decisions.md`, Seção D). Justificativa completa, incluindo alternativas descartadas, registrada em `decisions.md`, decisão #19.
+
+**Decisão oficial (A6 — congelada, nível arquitetural)**: responsabilidade — expor consultas agregadas de leitura compartilhadas, sempre calculadas em consulta, nunca persistidas (princípio 6). Consumidores fechados: Balanço, Obra, Frota, ferramentas de consulta da IA — nenhum outro, nenhum reimplementa a lógica separadamente (Divergência 2). Quatro categorias de consulta (nível arquitetural, não catálogo de métodos concretos): (1) custo agregado por dimensão (Obra, Veículo); (2) resultado financeiro derivado, composto a partir de custo agregado, receita e ajustes (ex. "Lucro por Obra"); (3) saldo/posição em aberto (ex. saldo devedor de Contrato Financeiro); (4) efeito líquido de correções sobre um fato original (ex. custo efetivo de um Lançamento após Ajustes). Cada categoria é acessada via método do Facade, com escopo por Empresa herdado automaticamente via Hibernate/JPA Filters (A4). A fórmula interna de cada categoria (sinal do Ajuste, exclusão ou não de Lançamentos Cancelados, terminologia de status subjacente) permanece fora do escopo desta decisão — documentada em `plano-implementacao-sql.md` (Views adiadas), a resolver quando cada funcionalidade for especificada e implementada. Justificativa completa registrada em `decisions.md`, decisão #35.
+
 ---
 
 ## 7. ESTRATÉGIA DE ESCALABILIDADE E MANUTENIBILIDADE
@@ -319,13 +336,17 @@ O conceitual já fixa o contrato: **modelo de mercado via API, nunca acesso dire
 
 - **Porta de IA** (`infrastructure/ia-provider`, Seção 6): uma interface única de "ferramentas disponíveis para IA" (ex.: buscar despesas, custo de obra, ranking de fornecedores) implementada no domínio/aplicação, exposta ao provedor de IA escolhido via *function calling*/*tool use*. Trocar de provedor (Anthropic, OpenAI, Google) deve significar trocar só esse adaptador.
 - **Estados pendentes reais no banco** para `SUGESTÃO_IA` e `AÇÃO_PROPOSTA_IA` (já exigido no checklist do conceitual) — nunca lógica só de tela.
-- **Barreira de confirmação Alto**: o mecanismo exato é pendência técnica explícita no conceitual (pendência 12). Opções a decidir:
+- **Barreira de confirmação Alto**: comparação técnica original entre três opções, preservada abaixo por completude histórica:
 
 | Opção | Vantagens | Desvantagens |
 |---|---|---|
 | Reautenticação (senha/2FA no momento da confirmação) | Simples de implementar, familiar ao usuário | Fricção a cada ação sensível |
 | Segundo aprovador (usuário diferente do que originou a conversa com a IA) | Barreira mais forte, reduz erro de um único operador | Exige mais de um usuário ativo no sistema — pode não ser viável no dia a dia de uma operação pequena |
 | Confirmação simples reforçada (tela de revisão explícita dos dados antes de gravar, sem segundo fator) | Já cobre a exigência mínima do conceitual (regra 27/28: nunca executa sem confirmação explícita) | Mais fraca que as duas opções acima como "barreira" |
+
+**Nota sobre a comparação acima**: "Segundo aprovador" foi retirada da comparação técnica que embasou a decisão final — não avaliada como candidata concorrente, porque a decisão #17 (A3) já congelou, como premissa arquitetural, que o cenário típico deste projeto é uma empresa do grupo com apenas um usuário financeiro disponível — exatamente o cenário de travamento que essa alternativa reproduziria. Duas assimetrias na comparação entre as duas opções restantes (Reautenticação e Confirmação simples reforçada) foram identificadas em auditoria e corrigidas antes da escolha final — detalhe completo em `decisions.md`, decisão #22.
+
+**Decisão oficial (A8 — congelada)**: **reautenticação (senha)** — no momento da confirmação de uma `AÇÃO_PROPOSTA_IA` de nível Alto, o usuário reinforma sua senha, verificada contra o hash já definido em T3 (Argon2), como controle adicional e independente da sessão em uso (não envolve o token JWT de sessão, que resolve identidade/autorização geral via A4, não esta barreira). Escopo: exclusivamente criação/confirmação de `LIQUIDAÇÃO_FINANCEIRA` e ações equivalentes — `AJUSTE_FINANCEIRO` já está fora do que a IA pode propor (Decisão 8). Não altera nem depende do mecanismo de A4 — é um terceiro controle, adicional aos dois pontos de checagem já definidos. Justificativa completa, incluindo as correções feitas à comparação técnica e a interação com D7, registrada em `decisions.md`, decisão #22.
 
 - **Orquestração do lado do código**: chamar a API do provedor de IA diretamente (via SDK oficial) vs. usar um framework de orquestração de agentes (ex. Claude Agent SDK, LangChain). Para o escopo descrito (ferramentas de consulta bem definidas, sem necessidade de agente autônomo multi-etapas complexo), uma chamada direta ao SDK do provedor com *tool use* tende a ser suficiente e mais simples de auditar — mas isso também é decisão em aberto.
 
@@ -349,14 +370,20 @@ O conceitual já garante que qualquer formato de entrada resulta em `MOVIMENTAÇ
 
 **Forma conceitual — resolvida** (`domain-model/24-log-auditoria.md`, Seção 7): `LOG_AUDITORIA` permanece uma única entidade, com referência genérica (`entidade` + `id`), restrita a uma lista fechada de entidades oficialmente auditáveis — nunca uma referência totalmente livre. A referência genérica existe só no nível conceitual e não flexibiliza nenhuma regra de negócio própria de cada mecanismo. Isso elimina, como opção técnica viável, a alternativa de "tabela de log dedicada por entidade" (que exigiria `LOG_AUDITORIA` deixar de ser uma única entidade) — ela é **incompatível** com a decisão já tomada, não apenas menos preferida.
 
-**Técnica de implementação exata — ainda em aberto**:
+**Técnica de implementação exata — definida (B4, decisão #20)**:
 
 | Opção | Como funciona | Vantagens | Desvantagens |
 |---|---|---|---|
-| **Referência polimórfica** (`entidade_tipo` + `entidade_id` numa tabela única de log) | Uma tabela `LOG_AUDITORIA` genérica referencia qualquer entidade por tipo+id | Consulta "todo histórico de qualquer coisa" fica simples (uma tabela só); adicionar nova entidade auditável não exige nova tabela de log | Sem integridade referencial garantida pelo banco (FK não pode apontar para "tabela variável"); validação de que o `entidade_id` existe fica por conta da aplicação |
+| **Referência polimórfica** (`entidade_tipo` + `entidade_id` numa tabela única de log) — **ESCOLHIDA (decisão oficial)** | Uma tabela `LOG_AUDITORIA` genérica referencia qualquer entidade por tipo+id | Consulta "todo histórico de qualquer coisa" fica simples (uma tabela só); adicionar nova entidade auditável não exige nova tabela de log | Sem integridade referencial garantida pelo banco (FK não pode apontar para "tabela variável"); validação de que o `entidade_id` existe fica por conta da aplicação |
 | **Event Sourcing** | Auditoria é inerente ao modelo de dados, não uma tabela separada | Rastreabilidade máxima, "de fábrica" | Mudança de paradigma grande para o restante do sistema — desproporcional ao problema descrito no conceitual, que pede um log auditável, não um sistema orientado a eventos. Mantido aqui só por completude; já descartado como candidato real desde a arbitragem técnica |
 
-**Mecanismo de população do log — requisito resolvido pela arbitragem técnica (Divergência 3, mudança obrigatória), mecanismo exato ainda em aberto**: não é mais uma escolha entre "nível de aplicação" ou "nível de banco" tratados como alternativas — a arquitetura exige um mecanismo que seja **ao mesmo tempo automático** (nenhuma escrita relevante passa sem gerar log — elimina o risco de omissão) **e ciente do contexto de negócio** (captura a origem — Manual/Importação/Sugestão de IA Confirmada/Ação de IA Confirmada — informação que só existe no nível de aplicação). Um mecanismo automático aplicado a todo caso de uso de escrita (decorator, wrapper de "unit of work", ou equivalente) que **exija** o contexto de negócio como parâmetro obrigatório de entrada satisfaz as duas propriedades ao mesmo tempo — a dicotomia entre "automático sem contexto" e "manual com contexto" é falsa. O mecanismo técnico exato permanece decisão pendente (Seção 15); triggers de banco puros, sozinhos, não satisfazem o requisito de contexto de negócio e não são suficientes como mecanismo único.
+Duas outras alternativas foram comparadas na resolução de B4, fora desta tabela original: tabela de junção e FKs mutuamente exclusivas — ambas descartadas por exigirem reestruturação do schema físico já implementado e por escalarem mal conforme a lista de entidades auditáveis crescer. Justificativa completa em `decisions.md`, decisão #20.
+
+**Mecanismo de população do log — requisito resolvido pela arbitragem técnica (Divergência 3, mudança obrigatória), mecanismo exato ainda em aberto**: não é mais uma escolha entre "nível de aplicação" ou "nível de banco" tratados como alternativas — a arquitetura exige um mecanismo que seja **ao mesmo tempo automático** (nenhuma escrita relevante passa sem gerar log — elimina o risco de omissão) **e ciente do contexto de negócio** (captura a origem — Manual/Importação/Sugestão de IA Confirmada/Ação de IA Confirmada — informação que só existe no nível de aplicação). Um mecanismo automático aplicado a todo caso de uso de escrita (decorator, wrapper de "unit of work", ou equivalente) que **exija** o contexto de negócio como parâmetro obrigatório de entrada satisfaz as duas propriedades ao mesmo tempo — a dicotomia entre "automático sem contexto" e "manual com contexto" é falsa; triggers de banco puros, sozinhos, não satisfazem o requisito de contexto de negócio e não são suficientes como mecanismo único.
+
+**Decisão oficial (A5 — congelada)**: **aspecto customizado (Spring AOP, `@Around`)** — intercepta a execução de cada caso de uso de escrita, captura o estado do registro antes e depois da operação, e grava a linha correspondente em `LOG_AUDITORIA`, dentro da mesma transação da escrita de negócio; o contexto de execução exigido como parâmetro obrigatório de entrada contempla a totalidade das informações exigidas por `LOG_AUDITORIA` (Seção 2 de `domain-model/24-log-auditoria.md`). Hibernate Envers, JPA Entity Listeners, Spring Data JPA Auditing e Spring Application Events foram analisados e descartados. Compatível com A4, sem alterar nem pressupor seu mecanismo interno. Justificativa completa, incluindo alternativas descartadas e desvantagens aceitas, registrada em `decisions.md`, decisão #18. A técnica física do vínculo genérico de `LOG_AUDITORIA` (`entidade`/`id`) foi resolvida separadamente — ver B4, abaixo.
+
+**Decisão oficial (B4 — congelada)**: **referência polimórfica** (`entidade_tipo`/`entidade_id`, e os pares equivalentes `referencia_tipo`/`referencia_id` em `LOG_AUDITORIA` e `entidade_alvo_tipo`/`entidade_alvo_id` em `SUGESTÃO_IA`), sem FK nativa do banco. A integridade referencial é mitigada, não eliminada, pela validação feita na camada de aplicação que grava os registros de auditoria. Em Hibernate/JPA, as colunas são mapeadas como campos simples, não como associação `@Any`/`@ManyToAny` — a resolução do registro real referenciado é feita explicitamente pela aplicação, não pelo ORM. Tabela de junção e FKs mutuamente exclusivas foram analisadas e descartadas. A estratégia definitiva de indexação das colunas de referência genérica permanece subordinada a B3, não resolvida por esta decisão. Justificativa completa, incluindo alternativas descartadas e desvantagens aceitas, registrada em `decisions.md`, decisão #20.
 
 ---
 
@@ -373,9 +400,17 @@ O conceitual marca "usuários e níveis de permissão" como pendência de negóc
 | **RBAC + escopo por empresa** (papel + lista de empresas às quais o usuário tem acesso) | Cobre a necessidade de segregação por empresa do grupo, sem virar um sistema multi-tenant completo | Mais uma dimensão para gerenciar nos cadastros de usuário |
 | **ABAC (permissão por atributo/regra dinâmica)** | Máxima flexibilidade | Complexidade desproporcional ao tamanho descrito da operação (uso interno, poucas empresas, poucos usuários) |
 
+**Decisão oficial (A2 — congelada)**: **RBAC + escopo por Empresa** — papel fixo (ex. Admin, Financeiro, Consulta) combinado com escopo sobre uma ou mais Empresas do grupo às quais o usuário tem acesso. ACL por objeto individual também foi analisada e descartada, pelo mesmo motivo já usado para excluí-la de A4 — granularidade por registro individual não corresponde a nenhum requisito documentado. Justificativa completa registrada em `decisions.md`, decisão #16.
+
 **Ponto que precisa de decisão de negócio, não só técnica**: os três níveis de confirmação da IA (Baixo/Médio/Alto, Seção 11 do conceitual) provavelmente devem se cruzar com o modelo de permissão — por exemplo, nem todo usuário com acesso ao Financeiro deveria necessariamente poder confirmar uma Ação de nível Alto. Isso deve ser decidido junto com a pendência 5 do conceitual, antes de desenhar o cadastro de usuários.
 
+**Decisão oficial (A3 — congelada)**: **Papel → nível máximo** — cada papel de usuário autoriza a confirmação até um nível máximo fixo entre os três definidos no conceitual (Baixo, Médio, Alto); nenhuma exigência de segunda confirmação por outro usuário. Justificativa completa registrada em `decisions.md`, decisão #17.
+
 **Mecanismo de checagem — requisito resolvido pela arbitragem técnica (Divergência 4, mudança obrigatória), modelo de permissão por trás ainda em aberto**: a checagem de permissão não pode depender de um único ponto de verificação opcional por caso de uso — precisa ser obrigatória, em **dois pontos distintos**: (i) autorização por ação, num guard de entrada, antes da camada de aplicação — cobre "o usuário pode fazer X?"; (ii) autorização por escopo de dado/Empresa, no ponto em que o registro-alvo é carregado (repositório ou início do caso de uso) — cobre "o usuário pode fazer X *neste* registro, desta Empresa específica?". O primeiro ponto sozinho não é suficiente porque a permissão por escopo de Empresa só pode ser verificada depois que o registro (ou sua referência de Empresa) é carregado. O modelo de permissão por trás (RBAC simples / RBAC + escopo por empresa / ABAC) continua decisão separada e pendente (Seção 15) — a exigência dos dois pontos de checagem vale independentemente de qual modelo for escolhido.
+
+**Decisão oficial (A4 — congelada)**: composição de dois mecanismos — **Spring Security Method Security** (`@PreAuthorize`/`@PostAuthorize`, com `PermissionEvaluator` customizado) para o ponto (i), aplicado no bean de aplicação (caso de uso) que executa cada operação — nunca restrito a um adaptador de entrada específico, cobrindo qualquer ponto de entrada presente ou futuro (controller, scheduler, consumidor de fila, confirmação de Ação de IA); e **Hibernate/JPA Filters** (`@FilterDef`/`@Filter`, não `@TenantId`) para o ponto (ii), parametrizado com o escopo de Empresas permitidas ao usuário. Justificativa completa, incluindo alternativas descartadas, registrada em `decisions.md`, decisão #15.
+
+**Decisão oficial (D7 — congelada)**: o ponto (ii) de A4 dependia de `LANÇAMENTO_FINANCEIRO` ter uma referência de Empresa para o Hibernate/JPA Filter usar — ausente até esta decisão. `LANÇAMENTO_FINANCEIRO` ganha `empresa_id` (FK, `NOT NULL`), obrigatório desde a criação em todos os caminhos (Manual, Cartão via Parcela, Contrato Financeiro via Parcela, Ação de IA Confirmada), com preenchimento e validação de consistência com `VEÍCULO.empresa_id` na camada de aplicação. `AÇÃO_PROPOSTA_IA` ganha `empresa_id` (FK, nullable) e o status "Aguardando Empresa", resolvendo a dependência circular com a checagem de escopo de Empresa quando a IA propõe criar um Lançamento (Achado 5, auditoria sistêmica) — a checagem passa a ocorrer na confirmação, não antes da criação da proposta. Justificativa completa registrada em `decisions.md`, decisão #21.
 
 ---
 
@@ -431,24 +466,25 @@ Nenhuma delas foi decidida silenciosamente neste documento — todas estão regi
 
 | # | Decisão | Opções apresentadas | Onde está discutida |
 |---|---|---|---|
-| 1 | Estilo de arquitetura de software | MVC simples / Camadas (N-tier) / Clean Architecture / Hexagonal — **o critério de proporcionalidade entre os dois perfis de módulo já está resolvido (Seção 4, incluindo a reclassificação de Categoria); a escolha do estilo em si permanece pendente** | Seção 4 |
-| 2 | Linguagem/framework de backend | Node.js+TypeScript (NestJS) / Python (FastAPI) / .NET (C#) | Seção 5.1 |
 | 3 | Framework de frontend | React (Next.js) / Vue 3 / Angular | Seção 5.2 |
-| 4 | Banco de dados físico | PostgreSQL / MySQL-MariaDB / SQL Server | Seção 5.3 |
-| 5 | ORM / camada de acesso a dados | Depende da decisão #2 (Prisma/TypeORM, SQLAlchemy, EF Core) | Seção 5.4 |
-| 6 | Estratégia de autenticação | Autenticação própria (JWT) / Provedor externo (Auth0, Clerk, Keycloak) | Seção 5.5 |
-| 7 | Hospedagem/infraestrutura | Em aberto, amarrada à decisão #2/#4 | Seção 5.6 |
-| 8 | Mecanismo exato da barreira "Alto" da IA (pendência 12 do conceitual) | Reautenticação / Segundo aprovador / Confirmação simples reforçada — **o escopo desta barreira ficou menor: `AJUSTE_FINANCEIRO` está definitivamente excluído do que a IA pode propor (`domain-model/23-acao-proposta-ia.md`), então o mecanismo só precisa cobrir criação/confirmação de `LIQUIDAÇÃO_FINANCEIRA` e ações equivalentes** | Seção 8 |
+| 5 | ORM / camada de acesso a dados | **Já definido como Hibernate/JPA (Spring Data JPA), decorrente da escolha de T1** — resta, só se houver necessidade real, o detalhe de estratégia de uso (ver `pendencias.md`, item B2) | Seção 5.4 |
 | 9 | Orquestração da IA | Chamada direta ao SDK do provedor / Framework de orquestração de agentes | Seção 8 |
 | 10 | Provedor de IA específico | Não avaliado aqui — o conceitual (Seção 19) já deixa isso propositalmente em aberto como "modelo de mercado via API" | Seção 8 |
 | 11 | Momento e provedor de integração bancária futura (Open Finance) | Upload manual (já cobre hoje) / Agregador Open Finance / API direta do banco | Seção 9 |
-| 12 | Implementação técnica do vínculo genérico de auditoria (pendência 13 do conceitual) | **A forma conceitual já está resolvida (entidade única, referência genérica — `domain-model/24-log-auditoria.md`), eliminando "tabela dedicada por entidade" como opção viável.** Ainda pendente: Referência polimórfica / Event Sourcing (mantido só por completude, já considerado desproporcional) | Seção 10 |
-| 13 | Mecanismo técnico exato que popula o log de auditoria | **Já não é mais uma escolha entre "nível de aplicação" ou "nível de banco" tratados como alternativas — a arbitragem técnica exige um mecanismo simultaneamente automático e ciente de contexto de negócio (Seção 10). O mecanismo técnico exato permanece pendente.** | Seção 10 |
-| 14 | Modelo de permissões de usuário (pendência 5 do conceitual) | RBAC simples / RBAC + escopo por empresa / ABAC — **independente da escolha, a checagem deve ocorrer em dois pontos obrigatórios (por ação e por escopo de dado/Empresa — Seção 11)** | Seção 11 |
-| 15 | Cruzamento entre papel de usuário e níveis de confirmação da IA | Não avaliado em detalhe — depende da decisão #14 e é também decisão de negócio | Seção 11 |
 | 16 | Ordem de implementação da IA (leitura → sugestão → ação) | Adotada como recomendação técnica neste documento, mas está listada como pendência de produto no conceitual (pendência 11) — precisa de confirmação explícita, não só herdar a recomendação | Seção 14 |
 
-**Item removido desta lista por já estar resolvido**: "Estratégia de cálculo do status do `LANÇAMENTO_FINANCEIRO`" — decidido (`domain-model/09-lancamento-financeiro.md`): `situação_administrativa` (persistida) e `status_financeiro` (sempre calculado, nunca armazenado) são dimensões independentes. Refletido na estrutura de pastas (Seção 6).
+**Itens removidos desta lista por já estarem resolvidos**:
+- "Estratégia de cálculo do status do `LANÇAMENTO_FINANCEIRO`" — decidido (`domain-model/09-lancamento-financeiro.md`): `situação_administrativa` (persistida) e `status_financeiro` (sempre calculado, nunca armazenado) são dimensões independentes. Refletido na estrutura de pastas (Seção 6).
+- "Linguagem/framework de backend" (item 2 original) — decidido: Java 21 LTS + Spring Boot, Maven, Hibernate/JPA (ver Seção 5.1 e `decisions.md`, decisão #12).
+- "Banco de dados físico" (item 4 original) — decidido: PostgreSQL (ver `arquitetura-fisica-banco.md`, Seção 1, e `pendencias.md`, item B1).
+- "Estilo de arquitetura de software" (item 1 original) — decidido: Clean Architecture, com o vocabulário de Ports & Adapters (Hexagonal) tratado como a mesma alternativa arquitetural (ver Seção 4 e `decisions.md`, decisão #13).
+- "Estratégia de autenticação" (item 6 original) — decidido: autenticação própria, Spring Security + JWT, hash de senha com Argon2 (bcrypt só como alternativa documentada) — nenhum provedor externo (ver Seção 5.5 e `decisions.md`, decisão #14).
+- "Modelo de permissões de usuário" (item 14 original) — decidido: RBAC + escopo por Empresa (ver Seção 11 e `decisions.md`, decisão #16).
+- "Cruzamento entre papel de usuário e níveis de confirmação da IA" (item 15 original) — decidido: Papel → nível máximo (ver Seção 11 e `decisions.md`, decisão #17).
+- "Mecanismo técnico exato que popula o log de auditoria" (item 13 original) — decidido: aspecto customizado (Spring AOP, `@Around`) (ver Seção 10 e `decisions.md`, decisão #18).
+- "Implementação técnica do vínculo genérico de auditoria" (item 12 original) — decidido: referência polimórfica (`entidade_tipo`/`entidade_id`), sem FK nativa do banco (ver Seção 10 e `decisions.md`, decisão #20).
+- "Mecanismo exato da barreira 'Alto' da IA" (item 8, pendência 12 do conceitual/A8) — decidido: reautenticação (senha) no momento da confirmação, verificada contra o hash já definido em T3 — "Segundo aprovador" excluído da comparação técnica (premissa de A3), "Confirmação simples reforçada" descartada por não oferecer verificação adicional de identidade (ver Seção 8 e `decisions.md`, decisão #22).
+- "Hospedagem/infraestrutura" (item 7 original, T4) — decidido em nível arquitetural: implantação inicial prioriza plataforma PaaS gerenciada, sem provedor específico escolhido; migração para infraestrutura maior condicionada a necessidade real (ver Seção 5.6 e `decisions.md`, decisão #38).
 
 **Itens de melhoria futura, registrados pela arbitragem técnica, ainda não decididos** (não bloqueiam implementação nesta fase): delimitar por escrito onde termina o vocabulário "Clean Architecture" e onde começa "porta/adaptador"; documentar, no plano de testes, o que cada camada de teste afirma para cenários compartilhados entre integração e aceitação; adicionar ferramenta de análise de dependência arquitetural à lista de decisões de stack quando a stack for escolhida; ao planejar a resolução de cada pendência de negócio do conceitual, classificá-la como comportamental ou estrutural antes de estimar esforço; priorizar estratégia de índice logo no início da Fase 3 (modelagem do banco), não adiar indefinidamente dentro dela.
 

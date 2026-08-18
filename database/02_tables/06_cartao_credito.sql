@@ -36,7 +36,6 @@ CREATE TABLE parcelas (
     total INTEGER NOT NULL,
     valor NUMERIC NOT NULL,
     vencimento DATE NOT NULL,
-    status TEXT NOT NULL,
     fatura_id UUID,
     lancamento_financeiro_id UUID,
     CONSTRAINT pk_parcelas PRIMARY KEY (id),

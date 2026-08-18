@@ -28,6 +28,7 @@
 | `taxa` | Taxa de juros do Financiamento | Percentual | Obrigatório quando `tipo` = Financiamento; **conceitualmente inexistente** quando `tipo` = Consórcio — não apenas vazio | Nenhum | Não definido | Cadastro manual | Só pode ser utilizado quando `tipo` = Financiamento — restrição de negócio do domínio, não apenas validação de interface | Mutuamente exclusivo com `grupo-cota`/`contemplado` |
 | `grupo-cota` | Identificação do grupo e cota do Consórcio | Texto | Obrigatório quando `tipo` = Consórcio; **conceitualmente inexistente** quando `tipo` = Financiamento — não apenas vazio | Nenhum | Não definido | Cadastro manual | Só pode ser utilizado quando `tipo` = Consórcio — restrição de negócio do domínio, não apenas validação de interface | Mutuamente exclusivo com `taxa` |
 | `contemplado` | Se o Consórcio já foi contemplado | Indicador (Sim/Não) | Obrigatório quando `tipo` = Consórcio; **conceitualmente inexistente** quando `tipo` = Financiamento — não apenas vazio | Não (inferência — um Consórcio nasce não contemplado) | Sim, no momento da contemplação | Cadastro manual | Só pode ser utilizado quando `tipo` = Consórcio — restrição de negócio do domínio, não apenas validação de interface | Quando passa a Sim, pode vincular-se a um Veículo (Seção 10 do conceitual) |
+| `veículo` | Veículo ao qual o Consórcio contemplado está vinculado | Referência para outra entidade (Veículo) | Não — só aplicável quando `tipo` = Consórcio e `contemplado` = Sim; conceitualmente inexistente nos demais casos | Nenhum (vazio) | Sim (correção de cadastro) | Cadastro manual | Deve referenciar um Veículo existente; só é válido se `tipo` = Consórcio e `contemplado` = Sim | Só Lançamentos gerados **após** a contemplação herdam este vínculo automaticamente — sem propagação retroativa para Lançamentos já gerados (D6, `decisions.md` decisão #28) |
 
 ---
 
@@ -52,7 +53,7 @@
 - **Regras de auditoria**: toda alteração de campo deve ser registrada em `LOG_AUDITORIA`.
 - **Regras de integridade**: `empresa` e `conta_bancária` devem existir; `veículo` (quando vinculado) deve existir e só é válido se `tipo` = Consórcio e `contemplado` = Sim.
 - **Regras de negócio**:
-  - Cada Parcela, ao vencer, gera um `LANÇAMENTO_FINANCEIRO` próprio (categoria "Amortização Empréstimo"/"Consórcios"), seguindo o fluxo normal de liquidação (Seção 10 do conceitual).
+  - Cada Parcela, ao vencer, gera um `LANÇAMENTO_FINANCEIRO` próprio (categoria "Amortização Empréstimo"/"Consórcios"), seguindo o fluxo normal de liquidação (Seção 10 do conceitual). Quando `tipo` = Consórcio e `contemplado` = Sim, o Lançamento gerado herda automaticamente `veículo` — mas só para Parcelas que vencem **após** a contemplação; Lançamentos gerados antes permanecem sem propagação retroativa (D6, `decisions.md` decisão #28).
   - `CONTRATO_FINANCEIRO` nunca é, ele mesmo, um Lançamento — só gera um por Parcela, ao vencer (coluna "Não representa" do catálogo).
   - **Saldo devedor é definido exclusivamente pela soma das Parcelas que ainda permanecem em aberto** (ainda não convertidas em Lançamento pago) — `valor_contratado` nunca participa desse cálculo. A fórmula "valor_contratado menos valor pago" é considerada inválida para o modelo conceitual.
   - O modelo não pretende decompor cada Parcela em principal, juros, taxa de administração ou qualquer outro componente financeiro. Cada Parcela representa apenas o valor efetivamente devido naquele vencimento — qualquer detalhamento financeiro além disso está deliberadamente fora do escopo deste sistema.
@@ -65,7 +66,7 @@
 |---|---|
 | Derivados | Nenhum |
 | Calculados | Nenhum campo próprio — "saldo devedor" não é campo desta entidade; é sempre a soma das Parcelas ainda em aberto, calculada em consulta — nunca a partir de `valor_contratado` (ver Seção 4) |
-| Persistidos | `tipo`, `empresa`, `conta_bancária`, `instituição`, `valor_contratado`, `taxa`, `grupo-cota`, `contemplado` |
+| Persistidos | `tipo`, `empresa`, `conta_bancária`, `instituição`, `valor_contratado`, `taxa`, `grupo-cota`, `contemplado`, `veículo` |
 | Imutáveis | `tipo` (por inferência) |
 | Auditáveis | Todos os campos |
 
@@ -86,3 +87,5 @@ A pendência 6 do conceitual (manter `CONTRATO_FINANCEIRO` único ou separar em 
 Os campos condicionais (`taxa`/`grupo-cota`/`contemplado`) deixaram de ser apenas uma observação e passaram a ser regra oficial do modelo, tratada como restrição de negócio do domínio — não apenas validação de interface (ver Seção 2 e Seção 4).
 
 **Princípio geral registrado a partir desta decisão** (`principios-de-modelagem.md`, princípio 1): entidades só devem ser separadas quando existir diferença real de comportamento de negócio — diferenças apenas de atributos específicos não justificam novas entidades.
+
+~~D6 (`revisao-integridade-dominio.md`, achado crítico) — vínculo Consórcio contemplado → Veículo não propagado aos Lançamentos de Parcela~~ — **Resolvida.** Só Lançamentos gerados após a contemplação herdam `veículo` automaticamente; sem propagação retroativa — ver Seção 2 e Seção 4; `decisions.md`, decisão #28.

@@ -3,7 +3,7 @@
 
 Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5. Sem SQL.
 
-**Validação prévia**: sem bloqueio total (ver mensagem anterior). D9 (`OBRA.status`) e D10 (`VEÍCULO.tipo`) bloqueiam só a enumeração/`CHECK` desses campos. D3 e D8 não afetam nenhuma coluna/constraint — só lógica de validação/edição de camada de aplicação.
+**Validação prévia**: sem bloqueio (ver mensagem anterior). D9 (`OBRA.status`) e D10 (`VEÍCULO.tipo`) resolvidas — `CHECK`/`DEFAULT` já aplicados abaixo. D3 e D8 não afetam nenhuma coluna/constraint — só lógica de validação/edição de camada de aplicação.
 
 ---
 
@@ -20,7 +20,7 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 | `data_inicio` | Data | Sim | — |
 | `data_prevista_termino` | Data | Sim | — |
 | `data_real_termino` | Data | Não | Só existe quando a Obra é concluída |
-| `status` | Enumerado/lista fechada | Sim | **Valores não definidos — D9** |
+| `status` | Enumerado/lista fechada | Sim | `A executar` / `Em andamento` / `Pausada` / `Concluída` — D9, `decisions.md` decisão #30. Default `A executar` |
 
 **PK**: `id` — `pk_obras`
 
@@ -30,12 +30,12 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 
 **UNIQUE**: nenhuma — o conceitual não declara cadastro único para Obra.
 
-**CHECK**: nenhum previsto.
+**CHECK**: `ck_obras_status` (`status IN ('A executar', 'Em andamento', 'Pausada', 'Concluída')`) — D9, `decisions.md` decisão #30.
 - Sem `CHECK` de positividade em `valor_contratado` — o conceitual diz "deve ser um valor monetário válido", sem o qualificador "positivo" usado em outros campos `valor` da cadeia financeira.
 - Sem `CHECK` de `data_prevista_termino` posterior a `data_inicio` — `03-obra.md` Seção 2 diz explicitamente que essa ordem "não está confirmada como validação obrigatória", apenas inferência lógica.
-- Sem `CHECK` de `status` — **D9**, sem inferência, sem valor padrão.
+- Sem `CHECK` de transição de `status` (ex. impedir pular direto para `Concluída`) — a regra de transição confirmada em D9 é tratada como regra de aplicação, não constraint de banco, mesmo padrão já usado para `situacao_administrativa` de `LANÇAMENTO_FINANCEIRO`.
 
-**DEFAULT**: nenhum.
+**DEFAULT**: `status` = `'A executar'` (D9).
 
 **Índices previstos**: índice de FK padrão em `cliente_id`.
 
@@ -54,25 +54,27 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 | `id` | Identificador | Sim | PK |
 | `empresa_id` | Identificador (FK) | Sim | → `empresas.id` |
 | `nome_identificacao` | Texto curto | Sim | — |
-| `tipo` | Enumerado/lista fechada | Sim | **Valores não definidos — D10** |
+| `tipo` | Enumerado/lista fechada | Sim | `Caminhão` / `Escavadeira` / `Pá carregadeira` / `Trator` / `Rolo compactador` / `Veículo leve` / `Terceiro` / `Outro` — D10, `decisions.md` decisão #31 |
+| `obra_atual_id` | Identificador (FK) | Não | → `obras.id`, nullável — alocação operacional corrente (D4) |
 
 **PK**: `id` — `pk_veiculos`
 
-**FK**: `fk_veiculos_empresa` (`empresa_id` → `empresas.id`), `ON DELETE RESTRICT`.
+**FK**: `fk_veiculos_empresa` (`empresa_id` → `empresas.id`), `ON DELETE RESTRICT`; `fk_veiculos_obra_atual` (`obra_atual_id` → `obras.id`), `ON DELETE RESTRICT`.
 
-**NOT NULL**: `id`, `empresa_id`, `nome_identificacao`, `tipo`.
+**NOT NULL**: `id`, `empresa_id`, `nome_identificacao`, `tipo`. `obra_atual_id` nulável.
 
 **UNIQUE**: nenhuma.
 
-**CHECK**: nenhum — `tipo` sem valores fechados (**D10**), sem inferência, sem valor padrão.
+**CHECK**: `ck_veiculos_tipo` (`tipo IN ('Caminhão', 'Escavadeira', 'Pá carregadeira', 'Trator', 'Rolo compactador', 'Veículo leve', 'Terceiro', 'Outro')`) — D10, `decisions.md` decisão #31.
 
-**DEFAULT**: nenhum.
+**DEFAULT**: nenhum — `tipo` sem valor inicial natural confirmado; cadastro exige informar explicitamente.
 
-**Índices previstos**: índice de FK padrão em `empresa_id`.
+**Índices previstos**: índice de FK padrão em `empresa_id` e em `obra_atual_id`.
 
 **Observações**:
 - "Custo do Veículo" não é campo desta tabela — consulta agregada sobre `lancamentos_financeiros` filtrada por `veiculo_id`.
-- Pendência D4 (alocação de veículo a obra sem despesa ainda) é funcionalidade futura — nenhuma coluna ou relacionamento novo foi adicionado para acomodá-la.
+- D4 resolvida (`decisions.md`, decisão #26): `obra_atual_id` adicionado — fato operacional de alocação corrente, independente da dimensão financeira (`lancamentos_financeiros.veiculo_id`/`obra_id`). Histórico de mudanças via `log_auditoria`, sem tabela dedicada.
+- D10 resolvida (`decisions.md`, decisão #31): oito valores de `tipo` confirmados e implementados como `CHECK`. `Terceiro` separa custo de frota própria de equipamento locado; `Outro` é categoria residual sem regra especial.
 
 ---
 
@@ -107,8 +109,8 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 **Índices previstos**: um por FK (`lancamento_financeiro_id`, `obra_id`).
 
 **Observações**:
-- **D3, aberta — sem solução aqui.** Se um Lançamento pode existir com rateio incompleto (soma < valor) por um período, ou se o rateio precisa fechar no ato do registro, não está definido. Isso afeta apenas *quando* a regra de soma (acima) é validada pela aplicação — não altera nenhuma coluna ou constraint desta tabela. Nenhuma inferência nem solução provisória foi adotada.
-- **D8, aberta — sem solução aqui.** Hoje nada impede a edição de `valor_rateado`/`obra_id` mesmo depois de o Lançamento já ter Aplicação de Liquidação vinculada, mudando retroativamente relatórios de custo já fechados. Nenhuma constraint de imutabilidade é aplicada a esta tabela — o texto-fonte não confirma nenhuma restrição atual, só identifica o risco.
+- **D3, resolvida (`decisions.md`, decisão #25).** Um Lançamento pode existir com rateio incompleto (soma < valor) por tempo indeterminado, sem prazo para fechamento — confirmado pela operação real. A regra de soma (acima) é validada pela aplicação no **fechamento** do rateio, não a cada escrita. Nenhuma coluna ou constraint desta tabela precisou mudar — a completude é sempre calculada por comparação, nunca persistida.
+- **D8, resolvida (`decisions.md`, decisão #29).** Decisão de negócio: `valor_rateado`/`obra_id` permanecem livremente editáveis mesmo depois de o Lançamento já ter Aplicação de Liquidação vinculada — nenhum mecanismo equivalente a `AJUSTE_FINANCEIRO` foi criado. Nenhuma constraint de imutabilidade aplicada a esta tabela, por escolha deliberada, não por lacuna.
 - Criação de múltiplos Rateios de um mesmo Lançamento, quando dividido entre várias Obras, é candidata natural a atomicidade de camada de aplicação — mesmo padrão já usado em outras tabelas com criação múltipla relacionada (ex. Parcelas de uma Compra/Contrato).
 
 ---

@@ -3,7 +3,7 @@
 
 Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5. Sem SQL.
 
-**Validação prévia**: bloqueio parcial (ver mensagem anterior) — **B4** afeta só as colunas de referência genérica das 3 tabelas (sem FK, sem escolha de mecanismo). Restante modelado integralmente.
+**Validação prévia**: bloqueio parcial já resolvido — **B4** (`decisions.md`, decisão #20) definiu as colunas de referência genérica das 3 tabelas como referência polimórfica, sem FK nativa por definição. Notas pontuais abaixo atualizadas; nenhuma coluna precisou ser alterada.
 
 ---
 
@@ -14,8 +14,8 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 | Coluna | Categoria de tipo | Obrigatória | FK / Observação |
 |---|---|---|---|
 | `id` | Identificador | Sim | PK |
-| `entidade_alvo_tipo` | Texto curto | Sim | Restrito a 2 valores fechados (Movimentação Bancária / Lançamento Financeiro) — **sem `FK`, mecanismo pendente (B4)** |
-| `entidade_alvo_id` | Identificador | Sim | **Sem `FK`** — mesma pendência |
+| `entidade_alvo_tipo` | Texto curto | Sim | Restrito a 2 valores fechados (Movimentação Bancária / Lançamento Financeiro) — **sem `FK` por definição (B4, referência polimórfica — `decisions.md` decisão #20)** |
+| `entidade_alvo_id` | Identificador | Sim | **Sem `FK`** — mesma definição de B4; validação de existência é responsabilidade da camada de aplicação |
 | `campo_sugerido` | Texto curto | Sim | — |
 | `valor_sugerido` | Texto curto | Sim | Tipo real depende de `campo_sugerido` — não resolvido nesta etapa |
 | `justificativa` | Texto longo | Sim | — |
@@ -38,13 +38,13 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 
 **DEFAULT**: `status` = `'Pendente'` — esse valor específico é confirmado diretamente no texto-fonte, mesmo a lista completa não sendo.
 
-**Índices previstos**: índice de FK padrão em `grupo_sugestao_id`. `(entidade_alvo_tipo, entidade_alvo_id)` é candidato natural, mas a estratégia exata depende do mecanismo de B4 — não decidida.
+**Índices previstos**: índice de FK padrão em `grupo_sugestao_id`. `(entidade_alvo_tipo, entidade_alvo_id)` é implicação natural da referência polimórfica definida em B4 — segue o critério objetivo de B3 (`decisions.md` decisão #37) — indexação adicional só quando necessidade objetiva for demonstrada, não decidida antecipadamente aqui.
 
 **Observações**:
 - **Sem coluna para "quem confirmou"** — a autoria da confirmação vive exclusivamente em `logs_auditoria` (mesmo princípio já usado em `02-usuario.md`: entidades de negócio não duplicam autoria, que é centralizada no log).
 - Regra 29 (nunca fundir `categoria` e `classificação` na mesma sugestão) já é garantida estruturalmente — cada linha representa um único `campo_sugerido`; duas mudanças exigem duas linhas, sem constraint adicional necessária.
 - `grupo_sugestao_id` nunca deve ser usado para inferir confirmação em lote sem revisão individual — regra de comportamento da aplicação, sem impacto na estrutura.
-- **Referência genérica (`entidade_alvo_tipo`/`entidade_alvo_id`) — B4, sem solução aqui.** Nenhum mecanismo (referência polimórfica, duas FKs mutuamente exclusivas, ou outro) foi escolhido; ambos continuam só candidatos em `22-sugestao-ia.md` Seção 7.
+- **Referência genérica (`entidade_alvo_tipo`/`entidade_alvo_id`) — B4, resolvida.** Referência polimórfica escolhida como mecanismo oficial (`decisions.md`, decisão #20); tabela de junção e FKs mutuamente exclusivas foram analisadas e descartadas. `22-sugestao-ia.md`, Seção 7, deve ser atualizada para refletir esta resolução.
 
 ---
 
@@ -58,31 +58,34 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 | `tipo_acao` | Texto curto | Sim | Catálogo não enumerado — **I1, aberta** |
 | `dados_propostos` | Texto longo | Sim | Estrutura variável conforme `tipo_acao` — forma física não resolvida |
 | `nivel_sensibilidade` | Enumerado — fechado (Baixo / Médio / Alto) | Sim | — |
-| `status` | Enumerado — inferido, não confirmado literalmente | Sim | Default `Pendente` |
+| `status` | Enumerado — inferido, não confirmado literalmente, mais "Aguardando Empresa" (D7) | Sim | Default `Pendente`, ou `'Aguardando Empresa'` quando `empresa_id` não puder ser determinado no momento da proposta |
+| `empresa_id` | Identificador (FK) | Condicional | → `empresas.id` — nulo enquanto `status` = `'Aguardando Empresa'`; obrigatório para confirmação (D7, `decisions.md` decisão #21) |
 
 **PK**: `id` — `pk_acoes_propostas_ia`
 
-**FK**: nenhuma.
+**FK**: `fk_acoes_propostas_ia_empresa` (`empresa_id` → `empresas.id`), `ON DELETE RESTRICT`.
 
-**NOT NULL**: `id`, `tipo_acao`, `dados_propostos`, `nivel_sensibilidade`, `status`.
+**NOT NULL**: `id`, `tipo_acao`, `dados_propostos`, `nivel_sensibilidade`, `status`. `empresa_id` nulável a nível de coluna — obrigatoriedade condicional resolvida via `CHECK` (abaixo).
 
 **UNIQUE**: nenhuma.
 
 **CHECK**:
 - `ck_acoes_propostas_ia_nivel_sensibilidade` — `nivel_sensibilidade` ∈ {Baixo, Médio, Alto} (afirmado diretamente, "um dos três valores da Seção 11 do conceitual").
+- `ck_acoes_propostas_ia_empresa_condicional` — (`status` = `'Aguardando Empresa'` ⇒ `empresa_id` nulo) e (`status` ≠ `'Aguardando Empresa'` ⇒ `empresa_id` preenchido), a partir do momento em que a proposta deixa esse estado (D7, `decisions.md` decisão #21).
 
 **Sem `CHECK` de `tipo_acao`**: catálogo não enumerado taxativamente — **I1**, sem inferência, sem lista.
-**Sem `CHECK` de `status`**: mesma ressalva de `sugestoes_ia` — inferência não confirmada literalmente.
+**Sem `CHECK` de `status`**: mesma ressalva de `sugestoes_ia` — inferência não confirmada literalmente; o quinto valor ("Aguardando Empresa") é o único, entre os cinco, decidido tecnicamente (D7), não apenas inferido.
 
 **DEFAULT**: `status` = `'Pendente'` (mesma base que `sugestoes_ia`).
 
-**Índices previstos**: nenhum previsto nesta etapa (tabela sem FK).
+**Índices previstos**: índice de FK padrão em `empresa_id` (política padrão, `arquitetura-fisica-banco.md` §8) — primeiro índice desta tabela, que antes não tinha nenhuma FK.
 
 **Observações**:
 - **Sem coluna para "registro real gerado".** A relação "Ação Proposta IA → registro gerado, 0:1" (`23-acao-proposta-ia.md` Seção 3) **não é atributo persistido** — ausente da Seção 2 daquele documento e de `modelo-logico.md` §3.23. Não foi inventada aqui nenhuma coluna para representá-la; o vínculo, quando existir, é rastreável indiretamente via `logs_auditoria` (origem "Ação de IA Confirmada" + referência à Ação).
 - **Confirmação da política de auditoria (Decisão 8)**: como esta tabela não tem nenhuma coluna apontando para um registro gerado, não há como ela, por construção, referenciar `AJUSTE_FINANCEIRO` — nada aqui contradiz a Decisão 8 ("`AJUSTE_FINANCEIRO` nunca é gerado por `AÇÃO_PROPOSTA_IA`").
 - **Sem coluna para "quem confirmou"** — mesma razão de `sugestoes_ia`.
-- Barreira de confirmação reforçada para `nível_sensibilidade` = Alto: mecanismo exato é pendência **A8**, não modelado como constraint física — comportamento de aplicação.
+- Barreira de confirmação reforçada para `nível_sensibilidade` = Alto: mecanismo definido como reautenticação (senha) — **A8**, `decisions.md`, decisão #22 — não modelado como constraint física, é comportamento de aplicação (nenhum campo novo em nenhuma tabela).
+- **`empresa_id` e o status "Aguardando Empresa" (D7, `decisions.md` decisão #21)**: resolvem a dependência circular entre esta entidade e a permissão por escopo de Empresa (Achado 5, auditoria sistêmica) — quando a IA não consegue determinar a Empresa do Lançamento que está propondo criar, a proposta é persistida mesmo assim, com `empresa_id` nulo e `status` = `'Aguardando Empresa'`; a checagem de escopo por Empresa (A4, ponto ii) só precisa ocorrer na confirmação, quando `empresa_id` já estará preenchido.
 
 ---
 
@@ -93,8 +96,8 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 | Coluna | Categoria de tipo | Obrigatória | FK / Observação |
 |---|---|---|---|
 | `id` | Identificador | Sim | PK |
-| `entidade` | Texto curto | Sim | Lista fechada de entidades auditáveis — **ainda não compilada** (`24-log-auditoria.md` Seção 7); **sem `FK`, mecanismo pendente (B4)** |
-| `entidade_id` | Identificador | Sim | **Sem `FK`** — mesma pendência |
+| `entidade` | Texto curto | Sim | Lista fechada de entidades auditáveis — **ainda não compilada** (`24-log-auditoria.md` Seção 7); **sem `FK` por definição (B4, referência polimórfica — `decisions.md` decisão #20)** |
+| `entidade_id` | Identificador | Sim | **Sem `FK`** — mesma definição de B4; validação de existência é responsabilidade da camada de aplicação |
 | `campo_alterado` | Texto curto | Sim | — |
 | `valor_anterior` | Texto longo | Sim | Tipo real depende do campo original; obrigatório mesmo vazio (registro de criação) |
 | `valor_novo` | Texto longo | Sim | Idem |
@@ -121,12 +124,12 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5.
 
 **DEFAULT**: nenhum.
 
-**Índices previstos**: índice de FK padrão em `usuario_id`. `(entidade, entidade_id)` é candidato natural para consulta de histórico por registro — estratégia exata depende do mecanismo de B4, não decidida.
+**Índices previstos**: índice de FK padrão em `usuario_id`. `(entidade, entidade_id)` é implicação natural da referência polimórfica definida em B4 para consulta de histórico por registro — segue o critério objetivo de B3 (`decisions.md` decisão #37) — indexação adicional só quando necessidade objetiva for demonstrada, não decidida antecipadamente aqui.
 
 **Observações**:
 - **Imutabilidade — confirmada, não pendência.** Todos os campos desta entidade são imutáveis após criação, sem exceção (`24-log-auditoria.md` Seção 5) — mesma reserva de mecanismo (trigger/privilégio) já usada nas demais tabelas, não decidida aqui.
 - Toda escrita relevante em entidade auditável deve gerar, na mesma transação, uma linha aqui — mecanismo automático e ciente de contexto já exigido por `arquitetura-tecnica.md` §10, não decisão nova.
-- **Referência genérica (`entidade`/`entidade_id`; `referencia_tipo`/`referencia_id`) — B4, sem solução aqui.** Nenhum mecanismo físico foi escolhido; a forma conceitual (entidade única, referência restrita a lista fechada) permanece a única parte já decidida (Decisão 3).
+- **Referência genérica (`entidade`/`entidade_id`; `referencia_tipo`/`referencia_id`) — B4, resolvida.** Referência polimórfica escolhida como mecanismo oficial, sem FK nativa (`decisions.md`, decisão #20); tabela de junção e FKs mutuamente exclusivas foram analisadas e descartadas. A forma conceitual (entidade única, referência restrita a lista fechada) continua como decidida na Decisão 3, agora complementada pela técnica física de B4.
 
 ---
 

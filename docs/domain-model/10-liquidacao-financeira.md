@@ -8,7 +8,7 @@
 
 **Quem cria**: Usuário, ou Ação de IA confirmada (nível Alto — "qualquer ação que gere ou confirme uma Liquidação real", Seção 11 do conceitual). Isso vale tanto para a liquidação de um único Lançamento quanto para a liquidação de uma Fatura de cartão (que cobre vários Lançamentos de uma vez) — a diferença está em qual módulo da aplicação aciona a criação, uma questão de orquestração técnica, não do domínio em si (ver `arbitragem-tecnica-final.md`, Divergência 6).
 
-**Quem altera**: não há, no conceitual, previsão explícita de alteração de uma Liquidação já registrada — ela representa um evento que ocorreu. Ver Seção 7.
+**Quem altera**: ninguém — imutável desde a criação, confirmado (D12, `decisions.md` decisão #33). Ela representa um evento que já ocorreu no momento em que é registrada.
 
 **Quem consulta**: `APLICAÇÃO_DE_LIQUIDAÇÃO` (para saber quais Lançamentos cobre), `VÍNCULO_CONCILIAÇÃO` (para conferir contra o extrato), `FATURA` (quando a Liquidação é o pagamento de uma fatura), Conciliação, Balanço (indiretamente, via Lançamento).
 
@@ -20,10 +20,10 @@
 
 | Campo | Significado | Tipo conceitual | Obrigatório? | Valor padrão | Pode mudar depois de criado? | Quem pode alterar | Regra de validação | Observações |
 |---|---|---|---|---|---|---|---|---|
-| `tipo` | Se é um Pagamento ou um Recebimento | Lista de valores (Pagamento / Recebimento) | Sim | Nenhum | Não — inferência estrutural, mudar o tipo de um evento já ocorrido não faz sentido de negócio; não confirmado como regra explícita | — | Um dos dois valores | — |
-| `data_efetiva` | Data em que a decisão/execução da liquidação ocorreu | Data | Sim | Nenhum | Não definido — evento já ocorrido, presumivelmente imutável, mas sem confirmação textual explícita | — | Deve ser uma data válida | Distinta de `data_competência`/`vencimento` do Lançamento |
-| `valor` | Valor total desta Liquidação | Valor monetário | Sim | Nenhum | Não definido — evento já ocorrido, presumivelmente imutável | — | Deve ser um valor monetário positivo | Pode ser maior que a soma das Aplicações vinculadas — ver nota abaixo |
-| `conta_bancária` | Conta Bancária em que a Liquidação ocorre | Referência para outra entidade (Conta Bancária) | Sim | Nenhum | Não definido | — | Deve referenciar uma Conta Bancária existente | Não é exigida no cadastro da obrigação (Lançamento), só neste momento (regra 11) |
+| `tipo` | Se é um Pagamento ou um Recebimento | Lista de valores (Pagamento / Recebimento) | Sim | Nenhum | **Não — imutável (D12, `decisions.md` decisão #33)** | — | Um dos dois valores | — |
+| `data_efetiva` | Data em que a decisão/execução da liquidação ocorreu | Data | Sim | Nenhum | **Não — imutável (D12)** | — | Deve ser uma data válida | Distinta de `data_competência`/`vencimento` do Lançamento |
+| `valor` | Valor total desta Liquidação | Valor monetário | Sim | Nenhum | **Não — imutável (D12)** | — | Deve ser um valor monetário positivo | Pode ser maior que a soma das Aplicações vinculadas — ver nota abaixo |
+| `conta_bancária` | Conta Bancária em que a Liquidação ocorre | Referência para outra entidade (Conta Bancária) | Sim | Nenhum | **Não — imutável (D12)** | — | Deve referenciar uma Conta Bancária existente | Não é exigida no cadastro da obrigação (Lançamento), só neste momento (regra 11) |
 
 **Nota importante sobre `valor` e a soma das Aplicações**: no caso de uma Fatura mista (Seção 7 do conceitual), o `valor` da Liquidação corresponde ao total cobrado da fatura, mas a soma de `APLICAÇÃO_DE_LIQUIDAÇÃO.valor_aplicado` vinculada a essa Liquidação cobre **apenas** os Lançamentos nascidos de compras Terraplanagem daquele ciclo — a diferença entre os dois é exatamente o valor das compras não-operacionais da fatura, uma diferença explicável, não uma divergência de conciliação. Ou seja: **a soma das Aplicações de uma Liquidação pode ser menor que o `valor` da própria Liquidação, mas (por inferência, não confirmado textualmente) não deveria ser maior.**
 
@@ -46,7 +46,7 @@
 - **Campos mutuamente exclusivos**: nenhum identificado.
 - **Campos obrigatórios por contexto**: nenhum além da obrigatoriedade geral dos quatro campos.
 - **Regras de criação**: por Usuário, ou por Ação de IA confirmada com barreira reforçada de nível Alto (regra 28) — nunca por qualquer outro módulo agindo sozinho.
-- **Regras de alteração**: não definidas no conceitual — uma Liquidação representa um evento ocorrido; presume-se, por analogia ao princípio "nada desaparece" e à natureza de evento factual, que correções após o registro não deveriam sobrescrever o evento original, mas isso não está confirmado (ver Seção 7).
+- **Regras de alteração**: nenhuma alteração é permitida após a criação — imutável, por regra confirmada (D12, `decisions.md` decisão #33), não mais por inferência. Consistente com o princípio 5 de modelagem, que cita literalmente "uma liquidação" como exemplo de fato histórico não reescrito.
 - **Regras de exclusão**: não definidas no conceitual.
 - **Regras de auditoria**: toda criação (e eventual alteração) deve ser registrada em `LOG_AUDITORIA`, com origem e, quando aplicável, referência à Ação de IA confirmada que a originou.
 - **Regras de integridade**: `conta_bancária` deve referenciar uma Conta Bancária existente; a soma de `APLICAÇÃO_DE_LIQUIDAÇÃO.valor_aplicado` vinculada não deveria ultrapassar `valor` (inferência, ver nota da Seção 2).
@@ -63,7 +63,7 @@
 | Derivados | Nenhum |
 | Calculados | Nenhum campo próprio — mas é a partir desta entidade (e de `APLICAÇÃO_DE_LIQUIDAÇÃO`) que o `status` de `LANÇAMENTO_FINANCEIRO` é calculado |
 | Persistidos | `tipo`, `data_efetiva`, `valor`, `conta_bancária` |
-| Imutáveis | Todos os campos, por inferência (evento já ocorrido) — não confirmado explicitamente no conceitual |
+| Imutáveis | Todos os campos, por regra confirmada (D12, `decisions.md` decisão #33) |
 | Auditáveis | Todos os campos |
 
 ---
@@ -76,8 +76,6 @@ Depende de `CONTA_BANCÁRIA` (obrigatório). É referenciada por `APLICAÇÃO_DE
 
 ## 7. Checklist de decisões pendentes
 
-**Esta entidade depende de alguma decisão ainda pendente? Sim.**
+**Esta entidade depende de alguma decisão ainda pendente? Não — resolvida.**
 
-- **Qual decisão**: se uma Liquidação já registrada pode ser alterada ou apenas estornada/substituída por uma nova — não definida em nenhum lugar do conceitual. Está relacionada à pendência 14 (cancelamento de Lançamento com Aplicação já existente), mas não é exatamente a mesma pergunta: a 14 trata do Lançamento; esta trata da Liquidação em si.
-- **Por que**: sem essa definição, não é possível confirmar se os campos desta entidade são imutáveis por regra de negócio ou apenas por inferência de bom senso (evento já ocorrido).
-- **O que muda na entidade**: a coluna "pode mudar depois de criado" de todos os campos (Seção 2) deixaria de ser inferência e passaria a ser regra confirmada, numa direção ou noutra.
+- ~~Se uma Liquidação já registrada pode ser alterada ou apenas estornada/substituída por uma nova~~ — **Resolvida (D12).** Imutável desde a criação, em todos os quatro campos — ver Seção 2 e Seção 4; `decisions.md`, decisão #33. A decisão trata exclusivamente da mutabilidade — não define nem pressupõe nenhum mecanismo de correção para erros identificados depois do registro; se essa necessidade aparecer, é decisão independente, não uma extensão desta.

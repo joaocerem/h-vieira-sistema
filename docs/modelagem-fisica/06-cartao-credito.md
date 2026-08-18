@@ -3,7 +3,7 @@
 
 Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5, mais a categoria "Numérico inteiro" (ver validação prévia — lacuna técnica de §5, não decisão de domínio). Sem SQL.
 
-**Validação prévia**: bloqueio parcial (ver mensagem anterior) — pendência **D11** afeta só a enumeração/`CHECK` de `PARCELA.status`. `CARTÃO_CRÉDITO` (`17-cartao-credito.md`) não modelado nesta etapa — fora do escopo definido; referenciado por nome de tabela (`cartoes_credito`).
+**Validação prévia**: sem bloqueio (ver mensagem anterior) — D11 resolvida como remoção de `PARCELA.status` (`decisions.md` decisão #32), sem impacto de schema. `CARTÃO_CRÉDITO` (`17-cartao-credito.md`) não modelado nesta etapa — fora do escopo definido; referenciado por nome de tabela (`cartoes_credito`).
 
 ---
 
@@ -38,7 +38,7 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5,
 
 **Observações**:
 - **Sem coluna/FK para `FATURA`** — confirmado: relação só transitiva via `PARCELA` (correção de consistência já aplicada na Fase 2).
-- **D5, aberta e não-bloqueante para o schema**: se uma correção posterior em `categoria_id`/`obra_id`/`veiculo_id` deveria propagar para o `LANÇAMENTO_FINANCEIRO` já gerado não está definido. Não afeta a estrutura de colunas desta tabela — é regra de sincronização de camada de aplicação, a resolver antes da Fase 4 (Backend).
+- **D5, resolvida (`decisions.md`, decisão #27).** Correção de `categoria_id`/`obra_id`/`veiculo_id` propaga automaticamente para o `LANÇAMENTO_FINANCEIRO` já gerado, exceto quando já existe `rateio_despesa` vinculado (desacoplamento definitivo). Não afeta a estrutura de colunas desta tabela — regra de sincronização de camada de aplicação.
 - `valor`: o domínio (`18-compra-cartao.md` Seção 2) marca mutabilidade como "Sim, sujeito à mesma cautela de `LANÇAMENTO_FINANCEIRO.valor` — não confirmado explicitamente". Nenhuma constraint de imutabilidade é aplicada aqui — a coluna permanece livremente mutável, sem inferir uma política mais restritiva do que o texto afirma.
 - **Fora do escopo de `CHECK`** (regra multi-tabela, camada de aplicação — `arquitetura-fisica-banco.md` §6): quando aplicável (compra classificada Terraplanagem), cada Parcela originada desta Compra Cartão gera um `LANÇAMENTO_FINANCEIRO` ao vencer (Seção 7 do conceitual; `18-compra-cartao.md` Seção 4) — não expressável como `CHECK` de tabela única; já refletido do lado de `parcelas.lancamento_financeiro_id`.
 
@@ -89,7 +89,6 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5,
 | `total` | Numérico inteiro | Sim | Imutável |
 | `valor` | Monetário (`NUMERIC`) | Sim | — |
 | `vencimento` | Data | Sim | — |
-| `status` | Enumerado/lista fechada | Sim | **Valores não definidos — D11** |
 | `fatura_id` | Identificador (FK) | Não | → `faturas.id` — só aplicável quando `origem` = Compra Cartão; permanente uma vez atribuído |
 | `lancamento_financeiro_id` | Identificador (FK) | Não | → `lancamentos_financeiros.id` — opcional, só preenchida quando a Parcela efetivamente gerou um Lançamento ao vencer |
 
@@ -97,7 +96,7 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5,
 
 **FKs**: `fk_parcelas_compra_cartao` (`compra_cartao_id` → `compras_cartao.id`); `fk_parcelas_contrato_financeiro` (`contrato_financeiro_id` → `contratos_financeiros.id`); `fk_parcelas_fatura` (`fatura_id` → `faturas.id`); `fk_parcelas_lancamento_financeiro` (`lancamento_financeiro_id` → `lancamentos_financeiros.id`) — todas `ON DELETE RESTRICT`.
 
-**NOT NULL**: `id`, `origem`, `numero`, `total`, `valor`, `vencimento`, `status`. `compra_cartao_id`/`contrato_financeiro_id`/`fatura_id`/`lancamento_financeiro_id` nuláveis a nível de coluna.
+**NOT NULL**: `id`, `origem`, `numero`, `total`, `valor`, `vencimento`. `compra_cartao_id`/`contrato_financeiro_id`/`fatura_id`/`lancamento_financeiro_id` nuláveis a nível de coluna.
 
 **UNIQUE**: `uq_parcelas_lancamento_financeiro` em `lancamento_financeiro_id` — cardinalidade 1:1 explícita ("Parcela → Lançamento Financeiro, 1:1 (opcional)", `21-parcela.md` Seção 3; `modelo-logico.md` §3.21). `(compra_cartao_id, número)` seria candidato plausível para impedir duas Parcelas com o mesmo número no mesmo parcelamento, mas **não há declaração explícita** disso no texto-fonte — não presumido, mesmo critério já usado para não aplicar `UNIQUE` a `USUÁRIO.identificador_de_acesso`.
 
@@ -111,7 +110,6 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5,
 - `ck_parcelas_valor_positivo` — `valor` > 0.
 
 **Fora do escopo de `CHECK`**:
-- Mutabilidade/enumeração de `status` — **D11, sem inferência, sem valor padrão, sem `CHECK`.**
 - `total` deve corresponder a `compras_cartao.numero_parcelas` quando `origem` = Compra Cartão (`21-parcela.md` Seção 2) — regra multi-tabela, camada de aplicação (`arquitetura-fisica-banco.md` §6).
 
 **DEFAULT**: nenhum.
@@ -122,6 +120,7 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5,
 - Vínculo `fatura_id` permanente uma vez atribuído (Seção 3): mecanismo de bloqueio pós-atribuição (trigger ou revogação de privilégio) não escolhido nesta etapa — mesma reserva já usada nas tabelas anteriores.
 - Regra de atribuição de ciclo (próximo ciclo aberto vs. fonte externa autoritativa, usando `LOG_AUDITORIA.data/hora`) é inteiramente lógica de aplicação — já resolvida como regra de negócio (Decisão 7), não afeta a estrutura desta tabela.
 - Criação de todas as Parcelas de um parcelamento, de uma vez, no momento do registro da Compra ou do Contrato — requisito de atomicidade de camada de aplicação, mesmo padrão já usado para Liquidação+Aplicações.
+- **D11 resolvida (`decisions.md`, decisão #32): coluna `status` removida, não só deixada sem `CHECK`.** O "estado" da Parcela é sempre calculado em consulta a partir de `vencimento` e `lancamento_financeiro_id` (já presente nesta tabela) — sem duplicar informação já coberta por essa FK.
 
 ---
 

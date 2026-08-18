@@ -25,8 +25,9 @@
 | `total` | Quantidade total de Parcelas do parcelamento | Número inteiro | Sim | Nenhum | Não | Sistema | Deve ser um número inteiro positivo | Corresponde a `COMPRA_CARTÃO.nº parcelas`, quando `origem` = Compra Cartão |
 | `valor` | Valor desta Parcela específica | Valor monetário | Sim | Nenhum | Não definido | Sistema | Deve ser um valor monetário positivo | — |
 | `vencimento` | Data em que esta Parcela vence | Data | Sim | Nenhum | Não definido | Sistema | Deve ser uma data válida | É o gatilho para gerar o `LANÇAMENTO_FINANCEIRO` correspondente |
-| `status` | Situação da Parcela | Lista de valores | Sim | Não definido | Sim, presumivelmente (ex. de "Pendente" para "Lançada", quando vence) | Sistema | Valores válidos não enumerados explicitamente no conceitual | Ver Seção 7. **Dimensão independente de "tem ou não Fatura vinculada" — nunca fundidas.** O estado de uma Parcela aguardando o fechamento do ciclo correspondente é representado pela ausência do campo `fatura` (abaixo), não por um valor de `status` |
 | `fatura` | Fatura à qual esta Parcela foi atribuída — o ciclo em que passou a integrar o processo financeiro do sistema | Referência para outra entidade (Fatura) | Não — ausente até o vínculo ser atribuído | Nenhum (vazio até a atribuição) | Não, depois de atribuído — o vínculo é permanente, mesmo que a Fatura já esteja fechada (ver regra de atribuição na Seção 4) | Sistema | Quando preenchido, deve referenciar uma Fatura existente | Aplicável apenas quando `origem` = Compra Cartão (Parcelas de Contrato Financeiro não se relacionam com Fatura). A ausência deste vínculo já representa, por si só, o estado "aguardando fatura" |
+
+**Nota sobre `status`**: campo **removido do modelo** (D11, `decisions.md` decisão #32) — nunca existiu nas planilhas originais, e nenhuma regra de negócio o utilizava. O estado de uma Parcela é sempre derivável em consulta, sem campo próprio: `lançamento_financeiro` (Seção 3) preenchido = gerou Lançamento; `vencimento` no futuro = ainda não venceu; `vencimento` no passado sem `lançamento_financeiro` = vencida, aguardando processamento (exceto Parcelas de Compra Fora da Operação, que nunca geram Lançamento por definição — ver Seção 3). Nenhum campo substitui `status`; a dimensão "tem ou não Fatura vinculada" continua representada exclusivamente pela ausência/presença de `fatura`, como já era.
 
 ---
 
@@ -35,8 +36,8 @@
 | Relacionamento | Cardinalidade | Significado | Quem controla | Regras | Restrições |
 |---|---|---|---|---|---|
 | Compra Cartão → Parcela | 1:N (condicional) | Presente quando `origem` = Compra Cartão | Sistema | Só gera Lançamento se a Compra é classificada Terraplanagem | — |
-| Contrato Financeiro → Parcela | 1:N (condicional) | Presente quando `origem` = Contrato Financeiro | Sistema | Ao vencer, sempre gera Lançamento (categoria "Amortização Empréstimo"/"Consórcios") | — |
-| Parcela → Lançamento Financeiro | 1:1 (opcional, "quando vence") | Ao vencer, a Parcela gera um Lançamento correspondente, se aplicável | Sistema | Só existe quando a Parcela efetivamente gerou um Lançamento | Uma Parcela de Compra Fora da Operação nunca gera este relacionamento |
+| Contrato Financeiro → Parcela | 1:N (condicional) | Presente quando `origem` = Contrato Financeiro | Sistema | Ao vencer, sempre gera Lançamento (categoria "Amortização Empréstimo"/"Consórcios") | Quando o Contrato é Consórcio contemplado, o Lançamento gerado herda `veículo` do Contrato — só se a Parcela vence após a contemplação (D6, `decisions.md` decisão #28) |
+| Parcela → Lançamento Financeiro | 1:1 (opcional, "quando vence") | Ao vencer, a Parcela gera um Lançamento correspondente, se aplicável | Sistema | Só existe quando a Parcela efetivamente gerou um Lançamento | Uma Parcela de Compra Fora da Operação nunca gera este relacionamento. É também o caminho usado pela propagação de correções de `COMPRA_CARTÃO.categoria`/`obra`/`veículo` (D5, `decisions.md` decisão #27) e pela herança de `veículo` de Consórcio contemplado (D6, `decisions.md` decisão #28) — a Parcela em si não duplica esses campos, só serve de ponte |
 | Fatura → Parcela | 1:N (condicional, quando `origem` = Compra Cartão) | Uma Fatura agrupa diretamente as Parcelas do ciclo correspondente | Sistema — no momento do fechamento do ciclo (quando não há fonte externa autoritativa) ou no momento da importação (quando há) | **Regra de atribuição**: se a Parcela nasce de uma Compra cadastrada manualmente, com `vencimento` pertencente a um ciclo já encerrado, e não existe fonte externa autoritativa informando a Fatura correta, a Parcela é atribuída ao **próximo ciclo aberto no momento do processamento** (usando `LOG_AUDITORIA.data/hora` como referência de quando o registro foi processado — nenhum campo adicional é necessário em `COMPRA_CARTÃO`). Se existe uma fonte externa autoritativa (ex. importação da operadora/banco) informando a Fatura correta, essa informação sempre prevalece, mesmo que o ciclo já esteja fechado — a Parcela se vincula à Fatura real, não ao próximo ciclo aberto | O vínculo é permanente uma vez atribuído; uma Fatura já fechada continua aceitando novos vínculos de Parcelas descobertas por importação tardia, sem que isso altere seus totais já congelados (ver `19-fatura.md`) |
 
 ---
@@ -54,7 +55,7 @@
   - Uma Parcela nunca é, ela mesma, um Lançamento (coluna "Não representa" do catálogo) — é a origem de até um Lançamento, no momento do vencimento.
   - Só Parcelas de Compra Terraplanagem geram Lançamento (Seção 7); Parcelas de Contrato Financeiro geram Lançamento sempre, ao vencer (Seção 10).
   - A regra do "próximo ciclo aberto" vale exclusivamente para cadastros manuais sem fonte externa autoritativa. Sempre que existir uma fonte oficial informando a Fatura correta (como importação da operadora ou banco), prevalece essa fonte, independentemente de o ciclo já estar fechado.
-  - `status` e `fatura` são dimensões independentes, nunca fundidas: `status` representa exclusivamente a situação própria da Parcela (vencimento, lançamento, ou outras dimensões que vierem a ser definidas); a existência ou não de vínculo com `Fatura` nunca é representada por um valor de `status`.
+  - O estado da Parcela (vencida ou não, gerou Lançamento ou não) nunca é representado pela existência ou não de vínculo com `Fatura`, e vice-versa — dimensões sempre independentes (D11, `decisions.md` decisão #32).
 
 ---
 
@@ -62,11 +63,11 @@
 
 | Categoria | Campos |
 |---|---|
-| Derivados | Nenhum |
+| Derivados | "Estado" da Parcela (vencida/não vencida, gerou Lançamento ou não) — sempre calculado a partir de `vencimento`, `lançamento_financeiro` e, quando necessário, da `classificação` da Compra/Contrato de origem; nunca persistido (D11, `decisions.md` decisão #32) |
 | Calculados | Nenhum campo aritmético — mas `valor` de cada Parcela é definido no momento do cálculo do parcelamento (não digitado individualmente pelo usuário) |
-| Persistidos | `origem`, `número`, `total`, `valor`, `vencimento`, `status`, `fatura` (quando aplicável) |
+| Persistidos | `origem`, `número`, `total`, `valor`, `vencimento`, `fatura` (quando aplicável) |
 | Imutáveis | `origem`, `número`, `total` (por inferência estrutural — a posição de uma parcela num parcelamento já calculado não deveria mudar); `fatura`, depois de atribuída (o vínculo é permanente) |
-| Auditáveis | `status`, e a geração do Lançamento associado |
+| Auditáveis | A geração do Lançamento associado |
 
 ---
 
@@ -78,11 +79,8 @@ Depende, de forma condicional e mutuamente exclusiva, de `COMPRA_CARTÃO` ou `CO
 
 ## 7. Checklist de decisões pendentes
 
-**Esta entidade depende de alguma decisão ainda pendente? Parcialmente.**
+**Esta entidade depende de alguma decisão ainda pendente? Não — resolvida.**
 
-O relacionamento com `Fatura` e a regra de atribuição de ciclo (Cenário manual vs. Cenário com fonte externa autoritativa) estão **resolvidos** (ver Seções 2-4). Também está resolvido que `status` nunca representa a existência de vínculo com Fatura — são dimensões independentes.
+O relacionamento com `Fatura` e a regra de atribuição de ciclo (Cenário manual vs. Cenário com fonte externa autoritativa) estão **resolvidos** (ver Seções 2-4).
 
-O que permanece em aberto:
-- **Qual decisão**: os valores válidos do campo `status` não estão enumerados no conceitual — mesma natureza de lacuna já identificada em `OBRA.status`, não catalogada entre as 14 pendências numeradas.
-- **Por que**: sem esses valores, não é possível confirmar todos os estados pelos quais uma Parcela passa antes e depois do vencimento (ex. se há distinção entre "não vencida" e "vencida mas ainda não processada").
-- **O que muda na entidade**: o conjunto de valores válidos de `status`, e possivelmente uma regra de transição associada à geração do Lançamento correspondente. Não afeta o campo `fatura`, já resolvido.
+- ~~Os valores válidos do campo `status` não estavam enumerados no conceitual~~ — **Resolvida (D11), com reformulação.** Auditoria documental (regras de negócio, decisões #1-#31) não encontrou nenhum uso funcional do campo — o gatilho real de geração do Lançamento sempre foi `vencimento`, nunca `status`; a dimensão "gerou Lançamento" já era 100% derivável de `lançamento_financeiro`, coluna já existente. A pergunta original foi substituída por "o atributo ainda pertence ao modelo?", respondida como não — `status` foi **removido** da entidade (`decisions.md`, decisão #32). Não afeta o campo `fatura`, que permanece exatamente como estava.

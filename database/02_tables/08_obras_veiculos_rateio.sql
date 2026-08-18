@@ -6,8 +6,9 @@ CREATE TABLE obras (
     data_inicio DATE NOT NULL,
     data_prevista_termino DATE NOT NULL,
     data_real_termino DATE,
-    status TEXT NOT NULL,
-    CONSTRAINT pk_obras PRIMARY KEY (id)
+    status TEXT NOT NULL DEFAULT 'A executar',
+    CONSTRAINT pk_obras PRIMARY KEY (id),
+    CONSTRAINT ck_obras_status CHECK (status IN ('A executar', 'Em andamento', 'Pausada', 'Concluída'))
 );
 
 CREATE TABLE veiculos (
@@ -15,7 +16,9 @@ CREATE TABLE veiculos (
     empresa_id UUID NOT NULL,
     nome_identificacao TEXT NOT NULL,
     tipo TEXT NOT NULL,
-    CONSTRAINT pk_veiculos PRIMARY KEY (id)
+    obra_atual_id UUID,
+    CONSTRAINT pk_veiculos PRIMARY KEY (id),
+    CONSTRAINT ck_veiculos_tipo CHECK (tipo IN ('Caminhão', 'Escavadeira', 'Pá carregadeira', 'Trator', 'Rolo compactador', 'Veículo leve', 'Terceiro', 'Outro'))
 );
 
 CREATE TABLE rateios_despesa (

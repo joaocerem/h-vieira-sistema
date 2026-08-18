@@ -11,6 +11,7 @@ Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arqui
 |---|---|---|---|
 | `id` | Identificador | Sim | PK |
 | `tipo` | Enumerado — fechado (Despesa / Receita) | Sim | Imutável após criação (inferência estrutural forte, `09-lancamento-financeiro.md` Seção 2) |
+| `empresa_id` | Identificador (FK) | Sim | → `empresas.id` — obrigatório desde a criação (D7, `decisions.md` decisão #21); deve corresponder a `veiculos.empresa_id` quando `veiculo_id` estiver preenchido — validação na camada de aplicação, não `CHECK` (não é possível referenciar outra tabela em `CHECK`) |
 | `categoria_id` | Identificador (FK) | Sim | → `categorias.id` |
 | `fornecedor_id` | Identificador (FK) | Condicional | → `fornecedores.id` — presente só quando `tipo` = Despesa |
 | `cliente_id` | Identificador (FK) | Condicional | → `clientes.id` — presente só quando `tipo` = Receita |
@@ -24,7 +25,7 @@ Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arqui
 
 **`status_financeiro` não é coluna desta tabela.** É valor sempre calculado a partir da soma de `APLICAÇÃO_DE_LIQUIDAÇÃO.valor_aplicado` (Decisão 1; princípio 6) — obtido por consulta/view (`vw_status_financeiro_lancamentos`, a projetar quando `APLICAÇÃO_DE_LIQUIDAÇÃO` for modelada), nunca persistido nesta tabela nem em nenhuma outra.
 
-**Nenhuma coluna `empresa_id`** — vínculo direto com Empresa é lacuna já catalogada (D7), não resolvida nesta etapa.
+**Coluna `empresa_id` presente e obrigatória** — vínculo direto com Empresa resolvido por D7 (`decisions.md`, decisão #21); ver linha da tabela acima.
 
 ---
 
@@ -32,6 +33,7 @@ Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arqui
 `id` — `pk_lancamentos_financeiros`
 
 ## FKs
+- `fk_lancamentos_financeiros_empresa` (`empresa_id` → `empresas.id`)
 - `fk_lancamentos_financeiros_categoria` (`categoria_id` → `categorias.id`)
 - `fk_lancamentos_financeiros_fornecedor` (`fornecedor_id` → `fornecedores.id`)
 - `fk_lancamentos_financeiros_cliente` (`cliente_id` → `clientes.id`)
@@ -41,7 +43,7 @@ Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arqui
 Todas com `ON DELETE RESTRICT` — padrão de `arquitetura-fisica-banco.md` §7, sem exceção justificada para esta tabela.
 
 ## NOT NULL
-`id`, `tipo`, `categoria_id`, `valor`, `data_competencia`, `vencimento`, `situacao_administrativa`, `origem`. `fornecedor_id`/`cliente_id`/`obra_id`/`veiculo_id` nuláveis a nível de coluna — obrigatoriedade condicional de `fornecedor_id`/`cliente_id` é resolvida via `CHECK` (abaixo), não via `NOT NULL` simples.
+`id`, `tipo`, `empresa_id`, `categoria_id`, `valor`, `data_competencia`, `vencimento`, `situacao_administrativa`, `origem`. `fornecedor_id`/`cliente_id`/`obra_id`/`veiculo_id` nuláveis a nível de coluna — obrigatoriedade condicional de `fornecedor_id`/`cliente_id` é resolvida via `CHECK` (abaixo), não via `NOT NULL` simples.
 
 ## UNIQUE
 Nenhuma — o conceitual não declara cadastro único para Lançamento Financeiro.
@@ -53,13 +55,13 @@ Nenhuma — o conceitual não declara cadastro único para Lançamento Financeir
 - `ck_lancamentos_financeiros_valor_positivo` — `valor` > 0.
 - `ck_lancamentos_financeiros_fornecedor_cliente_exclusivo` — exatamente um entre `fornecedor_id`/`cliente_id` preenchido, conforme `tipo` (`tipo`=Despesa ⇒ `fornecedor_id` preenchido e `cliente_id` nulo; `tipo`=Receita ⇒ o inverso). Regra já fechada e objetiva (Seção 4, `09-lancamento-financeiro.md`) — elegível a `CHECK` por `arquitetura-fisica-banco.md` §6.
 
-**Fora do escopo de `CHECK`** (regra multi-tabela, pertence à camada de aplicação — `arquitetura-fisica-banco.md` §6): exclusividade entre `obra_id` preenchido e a existência de linhas em `RATEIO_DESPESA` para o mesmo Lançamento; transição de `situacao_administrativa` para Cancelado exigir soma de Aplicações = 0; imutabilidade condicional de `valor` (só após 1ª Aplicação). Nenhuma dessas é resolvida nesta tabela isoladamente.
+**Fora do escopo de `CHECK`** (regra multi-tabela, pertence à camada de aplicação — `arquitetura-fisica-banco.md` §6): exclusividade entre `obra_id` preenchido e a existência de linhas em `RATEIO_DESPESA` para o mesmo Lançamento; transição de `situacao_administrativa` para Cancelado exigir soma de Aplicações = 0; imutabilidade condicional de `valor` (só após 1ª Aplicação); consistência entre `empresa_id` e `veiculos.empresa_id` quando `veiculo_id` estiver preenchido (D7, `decisions.md` decisão #21) — `CHECK` não pode referenciar outra tabela em PostgreSQL, validada no caso de uso de criação. Nenhuma dessas é resolvida nesta tabela isoladamente.
 
 ## DEFAULT previstos
 - `situacao_administrativa` = `'Ativo'`.
 
 ## Índices previstos
-- Um por FK (`categoria_id`, `fornecedor_id`, `cliente_id`, `obra_id`, `veiculo_id`) — política padrão, `arquitetura-fisica-banco.md` §8.
+- Um por FK (`empresa_id`, `categoria_id`, `fornecedor_id`, `cliente_id`, `obra_id`, `veiculo_id`) — política padrão, `arquitetura-fisica-banco.md` §8.
 - `idx_lancamentos_financeiros_data_competencia` — candidato explícito já citado em `arquitetura-tecnica.md`, Seção 7, para consultas agregadas (Balanço, custo de Obra/Veículo).
 
 ## Observações

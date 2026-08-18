@@ -1,6 +1,10 @@
 # USUÁRIO
 
 > **Aviso importante, válido só para esta entidade**: `USUÁRIO` **não consta no catálogo oficial de entidades da Seção 3 do conceitual**. O conceitual trata "usuários e níveis de permissão" explicitamente como **pendência 5, não bloqueante, mas não resolvida**. A `arbitragem-tecnica-final.md` (Divergência 4) também deixa o modelo de permissão como decisão pendente. Este documento existe porque o próprio conceitual pressupõe a existência de um usuário responsável em várias regras (ex. `LOG_AUDITORIA` tem campo "usuário"; confirmação de `SUGESTÃO_IA`/`AÇÃO_PROPOSTA_IA` exige um humano identificável) — mas **modela apenas o mínimo estrutural inevitável**, sem inventar papéis, permissões ou escopo por Empresa, que continuam em aberto. Qualquer campo além dos listados abaixo depende da resolução da pendência 5.
+>
+> *Nota histórica não incorporada a este aviso: a pendência 5 em si (modelo de permissões) foi resolvida por A2 — RBAC + escopo por Empresa (`decisions.md`, decisão #16). Este documento permanece deliberadamente na forma mínima pré-A2, aguardando a revisão completa já prevista na Seção 7 — ver nota de reconciliação abaixo sobre o que isso significa para `LOG_AUDITORIA`.*
+
+**Nota de reconciliação (A7, `decisions.md` decisão #36)**: o checklist do conceitual (Seção 18) exige `LOG_AUDITORIA` desde a primeira versão do schema; a Seção 16 marca usuários/permissões como pendência 5, não-bloqueante. As duas exigências nunca estiveram, na prática, em conflito: o "Usuário mínimo" modelado aqui (`nome`, `identificador de acesso`, `situação de acesso`) sempre foi suficiente para `LOG_AUDITORIA` existir desde o início, sem depender do modelo completo de permissões — o modelo completo **nunca foi pré-requisito** para a auditoria. Hoje essa tensão tem só valor histórico: a pendência 5 já foi encerrada por A2 (decisão #16).
 
 ## 1. Visão geral
 
@@ -36,7 +40,7 @@
 |---|---|---|---|---|---|
 | Usuário → Log Auditoria | 1:N | Cada entrada de auditoria referencia o Usuário responsável pela alteração (quando a origem é Manual, Sugestão de IA Confirmada ou Ação de IA Confirmada) | Sistema, no momento em que a alteração é registrada | Toda entrada de log com origem humana precisa de um Usuário associado | Não aplicável a alterações de origem "Importação Bancária", que não têm um usuário individual por trás |
 | Usuário → Sugestão IA | 1:N | Um Usuário confirma, edita ou rejeita cada Sugestão de IA | Usuário, manualmente | Nenhuma sugestão vira dado real sem essa confirmação | — |
-| Usuário → Ação Proposta IA | 1:N | Um Usuário confirma ou rejeita cada Ação Proposta pela IA, com barreira reforçada quando o nível é Alto | Usuário, manualmente | Nenhuma ação executa sem confirmação explícita | O mecanismo exato da barreira "Alto" é decisão pendente (pendência 12 do conceitual) |
+| Usuário → Ação Proposta IA | 1:N | Um Usuário confirma ou rejeita cada Ação Proposta pela IA, com barreira reforçada quando o nível é Alto | Usuário, manualmente | Nenhuma ação executa sem confirmação explícita | O mecanismo da barreira "Alto" é reautenticação (senha) — decisão congelada, `decisions.md`, decisão #22 (A8) |
 
 **Nota sobre as demais entidades do sistema**: o conceitual **não** define um campo "criado por"/"alterado por" em cada entidade de negócio individualmente — essa informação é capturada de forma centralizada em `LOG_AUDITORIA`, não duplicada entidade a entidade. Por isso, `USUÁRIO` não aparece como relacionamento direto de `EMPRESA`, `OBRA`, `LANÇAMENTO_FINANCEIRO` etc. neste modelo, mesmo que essas entidades sejam, na prática, criadas por um usuário.
 

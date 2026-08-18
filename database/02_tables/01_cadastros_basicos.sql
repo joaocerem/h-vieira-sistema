@@ -1,7 +1,6 @@
 CREATE TABLE empresas (
     id UUID DEFAULT gen_random_uuid(),
     nome TEXT NOT NULL,
-    tipo TEXT NOT NULL,
     CONSTRAINT pk_empresas PRIMARY KEY (id)
 );
 

@@ -18,8 +18,14 @@ CREATE TABLE acoes_propostas_ia (
     dados_propostos TEXT NOT NULL,
     nivel_sensibilidade TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'Pendente',
+    empresa_id UUID,
     CONSTRAINT pk_acoes_propostas_ia PRIMARY KEY (id),
-    CONSTRAINT ck_acoes_propostas_ia_nivel_sensibilidade CHECK (nivel_sensibilidade IN ('Baixo', 'Médio', 'Alto'))
+    CONSTRAINT ck_acoes_propostas_ia_nivel_sensibilidade CHECK (nivel_sensibilidade IN ('Baixo', 'Médio', 'Alto')),
+    CONSTRAINT ck_acoes_propostas_ia_empresa_condicional CHECK (
+        (status = 'Aguardando Empresa' AND empresa_id IS NULL)
+        OR
+        (status <> 'Aguardando Empresa' AND empresa_id IS NOT NULL)
+    )
 );
 
 CREATE TABLE logs_auditoria (

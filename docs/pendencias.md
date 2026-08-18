@@ -23,133 +23,13 @@
 
 ## 1. DOMÍNIO
 
-**D1 — Natureza jurídica das 6 "empresas" do grupo**
-- Origem: conceitual, pendência 1
-- Motivo em aberto: não afeta a existência do campo `EMPRESA.tipo`, só seus valores válidos
-- Fase de resolução: antes de implementar o cadastro de Empresa, caso `tipo` deva determinar comportamento diferenciado (ex. relatórios fiscais separados)
-- Bloqueia etapa futura? Não
-
-**D2 — Retirada do Patrão: identificar qual sócio**
-- Origem: conceitual, pendência 3; auditoria sistêmica, achado 8 (confirma a mesma pendência, sem conteúdo novo)
-- Motivo em aberto: não há campo ou entidade correspondente hoje, nem definição de negócio de como distinguir sócios
-- Fase de resolução: quando a necessidade de segregar por sócio se tornar concreta — funcionalidade futura
-- Bloqueia etapa futura? Não
-
-**D3 — Rateio pode ficar parcialmente pendente**
-- Origem: conceitual, pendência 8
-- Motivo em aberto: não está definido se um Lançamento pode existir com rateio incompleto por um período, ou se o rateio precisa fechar no ato do registro
-- Fase de resolução: antes de desenhar o motor de validação de `RATEIO_DESPESA` (Fase 4 — Backend)
-- Bloqueia etapa futura? Bloqueia o desenho da regra de validação de Rateio, não o núcleo financeiro
-
-**D4 — Alocação de veículo a obra sem despesa ainda**
-- Origem: conceitual, pendência 9
-- Motivo em aberto: funcionalidade futura, fora do núcleo, sem definição de negócio hoje
-- Fase de resolução: quando a necessidade concreta aparecer — trata-se como nova decisão de modelagem, não continuação desta pendência (`principios-de-modelagem.md`, princípio 2)
-- Bloqueia etapa futura? Não
-
-**D5 — Duplicação de `categoria`/`obra`/`veículo` entre Compra Cartão e o Lançamento gerado, sem regra de sincronização**
-- Origem: `revisao-integridade-dominio.md`, achado crítico
-- Motivo em aberto: não há definição de como (ou se) uma correção posterior em `COMPRA_CARTÃO.categoria`/`obra`/`veículo` deveria propagar para o `LANÇAMENTO_FINANCEIRO` já gerado
-- Fase de resolução: antes de implementar o módulo Cartão (Fase 4 — Backend)
-- Bloqueia etapa futura? Sim — risco real de duas fontes divergentes para o mesmo fato
-
-**D6 — Vínculo Consórcio contemplado → Veículo não propagado aos Lançamentos de Parcela**
-- Origem: `revisao-integridade-dominio.md`, achado crítico
-- Motivo em aberto: `LANÇAMENTO_FINANCEIRO.veículo` é preenchido manualmente, sem regra de herança do `CONTRATO_FINANCEIRO.veículo` vinculado
-- Fase de resolução: antes de implementar o relatório de custo de Frota para Contratos Financeiros (Fase 4 — Backend, módulo Financiamentos)
-- Bloqueia etapa futura? Sim — custo de veículo ficaria incompleto por padrão para consórcios contemplados
-
-**D7 — Vínculo direto `LANÇAMENTO_FINANCEIRO` ↔ `EMPRESA` ausente**
-- Origem: `revisao-integridade-dominio.md`; reforçada por auditoria sistêmica, achado 5 (dependência circular com o mecanismo de permissão por Empresa)
-- Motivo em aberto: não há campo/relacionamento direto; a Empresa só é conhecida indiretamente (via Veículo, ou só após Liquidação, via Conta Bancária)
-- Fase de resolução: antes de implementar controle de acesso por escopo de Empresa
-- Bloqueia etapa futura? Não bloqueia o núcleo financeiro; bloqueia especificamente a permissão por Empresa
-- **Dependência**: ligada a A2 (modelo de permissão) e A4 (mecanismo dos dois pontos de checagem) — a checagem "por escopo de dado/Empresa" não pode ser implementada para Lançamento sem esta pendência resolvida primeiro
-
-**D8 — Risco de edição retroativa de Rateio após Aplicação de Liquidação já existente**
-- Origem: `revisao-integridade-dominio.md`, achado importante
-- Motivo em aberto: nada impede hoje que um usuário altere como uma Despesa já paga é rateada entre Obras, mudando retroativamente relatórios de custo já fechados
-- Fase de resolução: antes de implementar a regra de edição de `RATEIO_DESPESA` (Fase 4 — Backend)
-- Bloqueia etapa futura? Não bloqueia o núcleo, mas deve ser decidida antes do motor de validação de Rateio
-
-**D9 — Valores válidos de `OBRA.status` não enumerados**
-- Origem: `domain-model/03-obra.md`, Seção 7 — lacuna identificada durante a modelagem do domínio, não catalogada entre as 14 pendências numeradas do conceitual
-- Motivo em aberto: o conceitual não enumera os estados possíveis de uma Obra (diferente de `LANÇAMENTO_FINANCEIRO.status`, cujos valores são explícitos na Seção 2). A existência de `data_prevista_término`/`data_real_término` sugere, no mínimo, uma distinção entre "em andamento" e "concluída", mas não há confirmação textual do conjunto completo de valores, nem de eventuais estados adicionais (ex. "paralisada", "cancelada")
-- Fase de resolução: antes de desenhar o cadastro/tela de Obra (Fase 4 — Backend)
-- Bloqueia etapa futura? Não bloqueia o núcleo financeiro; bloqueia especificamente a modelagem física do campo `status` de Obra
-
-**D10 — Valores válidos de `VEÍCULO.tipo` não enumerados**
-- Origem: `domain-model/07-veiculo.md`, Seção 7 — lacuna identificada durante a modelagem do domínio, mesma natureza da lacuna de D9 (`OBRA.status`), não catalogada entre as 14 pendências numeradas
-- Motivo em aberto: o conceitual não enumera os valores possíveis de classificação de Veículo; impacto menor que D9, pois `tipo` de Veículo não aparece hoje amarrado a nenhuma regra de negócio condicional
-- Fase de resolução: antes de desenhar o cadastro de Veículo (Fase 4 — Backend), sem urgência
-- Bloqueia etapa futura? Não
-
-**D11 — Valores válidos de `PARCELA.status` não enumerados**
-- Origem: `domain-model/21-parcela.md`, Seção 7 — lacuna identificada durante a modelagem do domínio, mesma natureza da lacuna de D9/D10, não catalogada entre as 14 pendências numeradas
-- Motivo em aberto: sem os valores, não é possível confirmar todos os estados pelos quais uma Parcela passa antes e depois do vencimento (ex. se há distinção entre "não vencida" e "vencida mas ainda não processada"). Não afeta o campo `fatura`, já resolvido (Decisão 7 da consolidação)
-- Fase de resolução: antes de implementar o motor de geração de Lançamento a partir de Parcela (Fase 4 — Backend, módulos Cartão e Financiamentos/Consórcios)
-- Bloqueia etapa futura? Não bloqueia o núcleo, mas deve ser decidida antes do desenho da tela/motor de acompanhamento de Parcelas
-
-**D12 — Mutabilidade de `LIQUIDAÇÃO_FINANCEIRA` já registrada**
-- Origem: `domain-model/10-liquidacao-financeira.md`, Seção 7 — lacuna identificada durante a modelagem do domínio; relacionada, mas não idêntica, à pendência 14 do conceitual (já resolvida como Decisão 2 da consolidação, que trata do Lançamento, não da Liquidação em si)
-- Motivo em aberto: o conceitual não define se uma Liquidação já registrada pode ser alterada ou apenas estornada/substituída por uma nova. Sem essa definição, os campos da entidade são imutáveis só por inferência (evento já ocorrido), não por regra confirmada
-- Fase de resolução: antes de desenhar a tela/rota de correção de Liquidação (Fase 4 — Backend, módulo Financeiro)
-- Bloqueia etapa futura? Não bloqueia o núcleo; bloqueia especificamente qualquer funcionalidade de correção de Liquidação já registrada
-
-**D13 — Regras de alteração e exclusão de `AJUSTE_FINANCEIRO` não definidas**
-- Origem: `domain-model/15-ajuste-financeiro.md`, Seção 7 — lacuna identificada durante a modelagem do domínio, sem urgência aparente dado o padrão de imutabilidade já observado em toda a cadeia financeira
-- Motivo em aberto: o conceitual não define se um Ajuste Financeiro já criado pode ser alterado ou excluído; a inferência de imutabilidade (por analogia ao princípio "nada desaparece") não é regra confirmada
-- Fase de resolução: antes de desenhar a tela/rota de edição de Ajuste Financeiro (Fase 4 — Backend, módulo Financeiro), sem urgência
-- Bloqueia etapa futura? Não
+*Nenhuma pendência aberta nesta categoria no momento — todas resolvidas (D1-D13, ver Seção 7).*
 
 ---
 
 ## 2. ARQUITETURA
 
-**A1 — Estilo de arquitetura de software (escolha final)**
-- Origem: `arquitetura-tecnica.md`, decisão #1
-- Motivo em aberto: Clean Architecture está recomendada, e o critério de proporcionalidade entre perfis de módulo já está resolvido (Seção 4); falta a aprovação formal do estilo em si
-- Fase de resolução: Fase 2 (Arquitetura Técnica), antes de iniciar a Fase 4 (Backend)
-- Bloqueia etapa futura? Sim — influencia estrutura de pastas e ritmo de implementação
-
-**A2 — Modelo de permissões de usuário**
-- Origem: conceitual, pendência 5; `arquitetura-tecnica.md`, decisão #14 (mesmo item, fundido)
-- Motivo em aberto: RBAC simples / RBAC + escopo por empresa / ABAC ainda não escolhido; "Usuário mínimo" já viabiliza Auditoria desde o dia 1, mas o modelo completo continua indefinido
-- Fase de resolução: antes de implementar controle de acesso (Fase 4 — Backend, módulo Usuários e Permissões)
-- Bloqueia etapa futura? Não bloqueia o núcleo financeiro; bloqueia a fase de controle de acesso
-- **Dependência**: A4 depende parcialmente deste modelo para sua implementação completa; D7 precisa estar resolvida antes de a checagem por escopo de Empresa funcionar para Lançamento
-
-**A3 — Cruzamento entre papel de usuário e níveis de confirmação da IA**
-- Origem: `arquitetura-tecnica.md`, decisão #15
-- Motivo em aberto: nem todo usuário com acesso ao Financeiro deveria poder confirmar uma Ação de nível Alto — ainda não decidido
-- Fase de resolução: junto com A2, antes de desenhar o cadastro de usuários
-- Bloqueia etapa futura? Não bloqueia o núcleo; bloqueia o desenho fino de permissões da IA
-- **Dependência**: depende diretamente de A2
-
-**A4 — Mecanismo técnico dos dois pontos de checagem de permissão (por ação + por escopo de dado/Empresa)**
-- Origem: `arbitragem-tecnica-final.md`, Divergência 4 — exigência já fixada e incorporada (`arquitetura-tecnica.md`, Seção 11); mecanismo técnico exato ainda aberto
-- Motivo em aberto: falta o mecanismo técnico exato que implementa os dois pontos já exigidos
-- Fase de resolução: Fase 4 — Backend, antes do primeiro módulo de escrita
-- Bloqueia etapa futura? Sim
-- **Dependência**: ver A2 e D7
-
-**A5 — Mecanismo técnico de auditoria: automático e ciente de contexto de negócio**
-- Origem: `arbitragem-tecnica-final.md`, Divergência 3; `arquitetura-tecnica.md`, decisão #13 (mesmo item, fundido) — exigência já fixada e incorporada (Seção 10); mecanismo técnico exato ainda aberto
-- Motivo em aberto: falta escolher o mecanismo exato (decorator, wrapper de "unit of work", ou outro)
-- Fase de resolução: Fase 4 — Backend, antes do primeiro módulo de escrita
-- Bloqueia etapa futura? Sim
-
-**A6 — Desenho exato do módulo de consulta compartilhado (`application/consultas-financeiras`)**
-- Origem: `arbitragem-tecnica-final.md`, Divergência 2 — existência do módulo já fixada e incorporada (Seção 6); desenho interno ainda aberto
-- Motivo em aberto: falta desenhar exatamente quais consultas/funções o módulo expõe (custo de obra, custo de veículo, saldo devedor de contrato, etc.)
-- Fase de resolução: Fase 4 — Backend, antes de implementar o segundo consumidor de leitura (Balanço, Obra, Frota ou IA)
-- Bloqueia etapa futura? Sim, a partir do segundo consumidor
-
-**A7 — Nota de reconciliação textual: "auditoria desde o dia 1" vs. "usuário não-bloqueante"**
-- Origem: auditoria sistêmica, achado 4
-- Motivo em aberto: já mitigado na prática pelo desenho de "Usuário mínimo" (`domain-model/02-usuario.md`); falta só escrever a nota formal cruzando as duas seções do conceitual
-- Fase de resolução: qualquer momento, sem urgência — documentação, não decisão
-- Bloqueia etapa futura? Não
+*Nenhuma pendência aberta nesta categoria no momento — todas resolvidas (A6, A7, ver Seção 7).*
 
 ---
 
@@ -179,9 +59,6 @@
 - Fase de resolução: antes de iniciar a Fase 6 — IA
 - Bloqueia etapa futura? Sim, para o início da Fase 6
 
-**I5 — Mecanismo exato da barreira "Alto"**
-- Ver A8 (categoria Arquitetura, por ser primariamente uma decisão de mecanismo técnico) — não duplicado aqui.
-
 **I6 — Orquestração da IA**
 - Origem: `arquitetura-tecnica.md`, decisão #9
 - Motivo em aberto: chamada direta ao SDK do provedor vs. framework de orquestração de agentes — ainda não escolhido
@@ -194,82 +71,26 @@
 - Fase de resolução: Fase 6 — IA
 - Bloqueia etapa futura? Sim, para a fase de IA
 
-**I8 — Campo para "segundo aprovador" (quem iniciou ≠ quem confirmou)**
-- Origem: auditoria sistêmica, achado 9
-- Motivo em aberto: `AÇÃO_PROPOSTA_IA` não tem hoje campo para distinguir quem iniciou o pedido de quem confirmou — só necessário se a opção "segundo aprovador" for escolhida para A8
-- Fase de resolução: condicional — só relevante se A8 for resolvida nesse sentido
-- Bloqueia etapa futura? Não, a menos que A8 seja resolvida escolhendo "segundo aprovador"
-- **Dependência**: depende diretamente de A8
-
 ---
 
 ## 4. BANCO DE DADOS
 
-**A8 — Mecanismo exato da barreira de confirmação "Alto" da IA**
-- Origem: conceitual, pendência 12; `arquitetura-tecnica.md`, decisão #8 (mesmo item, fundido)
-- Motivo em aberto: reautenticação / segundo aprovador / confirmação simples reforçada — ainda não escolhido. Escopo já reduzido: `AJUSTE_FINANCEIRO` está fora do que a IA pode propor (Decisão 8), então a barreira só precisa cobrir criação/confirmação de `LIQUIDAÇÃO_FINANCEIRA` e ações equivalentes
-- Fase de resolução: Fase 6 — IA (fase "ação"), antes de implementar `AÇÃO_PROPOSTA_IA` de nível Alto
-- Bloqueia etapa futura? Sim, só para a fase de Ação de IA
-- **Dependência**: I8 só se torna necessária se esta pendência for resolvida escolhendo "segundo aprovador"
-
-*(nota: A8 é referenciada em Arquitetura e IA por afetar as duas; listada uma única vez, ver referência cruzada em I5)*
-
-**B1 — Banco de dados físico**
-- Origem: `arquitetura-tecnica.md`, decisão #4
-- Motivo em aberto: PostgreSQL / MySQL-MariaDB / SQL Server — ainda não escolhido (PostgreSQL apontado como o mais citado para o perfil do domínio, mas não decidido)
-- Fase de resolução: Fase 3 — Modelagem do banco
-- Bloqueia etapa futura? Sim, para o início da Fase 3
-
-**B2 — ORM / camada de acesso a dados**
+**B2 — Estratégia complementar de consultas agregadas (avaliação futura de implementação)**
 - Origem: `arquitetura-tecnica.md`, decisão #5
-- Motivo em aberto: depende diretamente da escolha de linguagem/backend (T1) — não é decisão independente
-- Fase de resolução: Fase 3/4, junto com T1
-- Bloqueia etapa futura? Sim
-- **Dependência**: depende de T1
-
-**B3 — Estratégia de índice**
-- Origem: `arbitragem-tecnica-final.md`, Divergência 12
-- Motivo em aberto: corretamente fora do escopo da Fase 2, mas não deve ser adiada indefinidamente dentro da Fase 3
-- Fase de resolução: início da Fase 3 — Modelagem do banco
-- Bloqueia etapa futura? Não bloqueia o início da Fase 3, mas deve ser tratada logo no começo dela
-- **Dependência**: depende de B1 já escolhido
-
-**B4 — Implementação técnica do vínculo genérico de auditoria**
-- Origem: conceitual, pendência 13 (parcialmente resolvida); `arquitetura-tecnica.md`, decisão #12 (mesmo item, fundido)
-- Motivo em aberto: a forma conceitual já está resolvida (entidade única, referência genérica — `domain-model/24-log-auditoria.md`); resta a técnica exata. "Tabela dedicada por entidade" foi eliminada por incompatibilidade com a decisão conceitual já tomada — só "referência polimórfica" permanece candidata viável (Event Sourcing mantido só por completude, já considerado desproporcional)
-- Fase de resolução: Fase 3 — Modelagem do banco
-- Bloqueia etapa futura? Sim, para a modelagem física de `LOG_AUDITORIA`
+- Situação: **o ORM principal já está oficialmente decidido** — Hibernate/JPA via Spring Data JPA, definido em `decisions.md`, decisão #12, decorrente de T1 (ver também `arquitetura-tecnica.md`, Seção 5.4). **B2 não é mais uma decisão de tecnologia** — permanece só como avaliação futura de implementação: se as consultas agregadas mais complexas do domínio (custo de Obra, custo de Veículo, saldo devedor de Contrato) vão precisar de uma estratégia complementar ao Spring Data JPA (ex. jOOQ)
+- Fase de resolução: A6 já está desenhada em nível arquitetural (`decisions.md`, decisão #35) — pré-requisito satisfeito; falta só existir um caso real que justifique a análise, não antes
+- Bloqueia etapa futura? Não bloqueia o início da Fase 4, nem nenhum módulo que não dependa de consulta agregada complexa
+- **Dependência**: dependia de A6 estar desenhada — satisfeita; permanece aberta só pela ausência de caso real
 
 ---
 
 ## 5. TECNOLOGIA
-
-**T1 — Linguagem/framework de backend**
-- Origem: `arquitetura-tecnica.md`, decisão #2
-- Motivo em aberto: Node.js+TypeScript (NestJS) / Python (FastAPI) / .NET (C#) — ainda não escolhido
-- Fase de resolução: antes do início da Fase 4 — Backend
-- Bloqueia etapa futura? Sim
-- **Dependência**: B2 depende desta
 
 **T2 — Framework de frontend**
 - Origem: `arquitetura-tecnica.md`, decisão #3
 - Motivo em aberto: React (Next.js) / Vue 3 / Angular — ainda não escolhido
 - Fase de resolução: Fase 5 — Frontend
 - Bloqueia etapa futura? Sim, para o início da Fase 5
-
-**T3 — Estratégia de autenticação**
-- Origem: `arquitetura-tecnica.md`, decisão #6
-- Motivo em aberto: autenticação própria (JWT) / provedor externo — ainda não escolhido
-- Fase de resolução: Fase 4 — Backend
-- Bloqueia etapa futura? Sim
-- **Dependência**: relacionada a A4 — o guard de entrada precisa de um mecanismo de autenticação para saber "quem"
-
-**T4 — Hospedagem/infraestrutura**
-- Origem: `arquitetura-tecnica.md`, decisão #7
-- Motivo em aberto: amarrada a T1 e B1 — ainda não decidida
-- Fase de resolução: pode ser decidida em paralelo às Fases 4-5, antes do deploy
-- Bloqueia etapa futura? Não bloqueia o início da implementação
-- **Dependência**: depende de T1 e B1
 
 **T5 — Momento e provedor de integração bancária futura (Open Finance)**
 - Origem: `arquitetura-tecnica.md`, decisão #11
@@ -288,12 +109,6 @@
 ## 6. MELHORIAS FUTURAS
 
 *(formato resumido: origem, descrição, motivo, fase — sem repetir a argumentação completa dos documentos de origem)*
-
-**M1 — Vocabulário arquitetural duplo (Clean Architecture + Porta/Adaptador)**
-- Origem: `arbitragem-tecnica-final.md`, Divergência 8
-- Descrição: delimitar por escrito onde termina um vocabulário e começa o outro
-- Motivo: ambiguidade de baixo impacto, cosmética
-- Fase: qualquer momento, antes ou depois do início da implementação
 
 **M2 — Critério de teste para cenários compartilhados entre integração e aceitação**
 - Origem: `arbitragem-tecnica-final.md`, Divergência 9
@@ -345,7 +160,7 @@ Resolvidas durante a etapa de consolidação (Pendências 1 a 11) — ver `plano
 
 1. Estratégia de cálculo do `status` de `LANÇAMENTO_FINANCEIRO`
 2. Cancelamento de Lançamento com Aplicação de Liquidação já existente (pendência 14 do conceitual)
-3. Vínculo genérico de `LOG_AUDITORIA`/`SUGESTÃO_IA`/`AÇÃO_PROPOSTA_IA` — forma conceitual (pendência 13 do conceitual, parcial — técnica permanece em B4)
+3. Vínculo genérico de `LOG_AUDITORIA`/`SUGESTÃO_IA`/`AÇÃO_PROPOSTA_IA` — forma conceitual (pendência 13 do conceitual, parcial — técnica resolvida separadamente em B4)
 4. Unificação de `CONTRATO_FINANCEIRO` (pendência 6 do conceitual)
 5. Separação de `CATEGORIA` em natureza/sub-conta (pendência 4 do conceitual)
 6. Relação `FATURA`↔`PARCELA`↔`COMPRA_CARTÃO` e congelamento de totais de Fatura fechada
@@ -358,3 +173,91 @@ Resolvidas durante a etapa de consolidação (Pendências 1 a 11) — ver `plano
 Resolvida durante a Etapa 3 (consolidação da arquitetura técnica):
 - Confirmação de que o módulo Financeiro cria `LIQUIDAÇÃO_FINANCEIRA` ao fechar uma Fatura (arbitragem técnica, Divergência 6) — já incorporada em `arquitetura-tecnica.md`, Seção 6.
 - Correção de posicionamento da IA na estrutura de pastas (arbitragem técnica, Divergência 5) — já incorporada em `arquitetura-tecnica.md`, Seção 6.
+
+Resolvida durante a Fase 3 (modelagem física do banco de dados):
+- **B1 — Banco de dados físico**: PostgreSQL definido como SGBD oficial do projeto — decisão congelada em `arquitetura-fisica-banco.md`, Seção 1 (Etapa 3.2), sem alternativas em aberto; já implementado no schema físico (`database/`).
+
+Resolvida no início da Fase 4 (congelamento de T1):
+- **T1 — Linguagem/framework de backend**: Java 21 LTS + Spring Boot definidos como stack oficial do backend, com Maven como gerenciador de dependências e Hibernate/JPA como ORM principal — decisão congelada em `decisions.md`, decisão #12; `arquitetura-tecnica.md`, Seção 5.1, atualizada.
+
+Resolvida no início da Fase 4 (congelamento de A1):
+- **A1 — Estilo de arquitetura de software**: Clean Architecture congelada como estilo oficial, com o vocabulário de Ports & Adapters (Hexagonal) tratado como a mesma alternativa arquitetural (diferença só de vocabulário/ênfase) — decisão congelada em `decisions.md`, decisão #13; `arquitetura-tecnica.md`, Seção 4, atualizada; estrutura de pastas da Seção 6 passa de recomendação a padrão oficial do backend.
+
+Resolvida no início da Fase 4 (congelamento de T3):
+- **T3 — Estratégia de autenticação**: autenticação própria congelada — Spring Security, usuário/senha, JWT como mecanismo de autenticação, hash de senha com Argon2 (preferencial; bcrypt só como alternativa documentada) — nenhum provedor externo — decisão congelada em `decisions.md`, decisão #14; `arquitetura-tecnica.md`, Seção 5.5, atualizada.
+
+Resolvida no início da Fase 4 (congelamento de A4):
+- **A4 — Mecanismo técnico dos dois pontos de checagem de permissão**: composição de Spring Security Method Security (ponto i — autorização por ação, no bean de aplicação que executa cada operação) e Hibernate/JPA Filters via `@FilterDef`/`@Filter` (ponto ii — autorização por escopo de dado/Empresa) — decisão congelada em `decisions.md`, decisão #15; `arquitetura-tecnica.md`, Seção 11, atualizada.
+
+Resolvida no início da Fase 4 (congelamento de A2):
+- **A2 — Modelo de permissões de usuário**: RBAC + escopo por Empresa congelado como modelo oficial — papel fixo combinado com escopo sobre uma ou mais Empresas do grupo às quais o usuário tem acesso — decisão congelada em `decisions.md`, decisão #16; `arquitetura-tecnica.md`, Seção 11, atualizada.
+
+Resolvida no início da Fase 4 (congelamento de A3):
+- **A3 — Cruzamento entre papel de usuário e níveis de confirmação da IA**: Papel → nível máximo congelado como modelo oficial — cada papel de usuário autoriza a confirmação até um nível máximo fixo entre os três definidos no conceitual (Baixo, Médio, Alto) — decisão congelada em `decisions.md`, decisão #17; `arquitetura-tecnica.md`, Seção 11, atualizada.
+
+Resolvida no início da Fase 4 (congelamento de A5):
+- **A5 — Mecanismo técnico de auditoria automática**: aspecto customizado (Spring AOP, `@Around`) congelado como mecanismo oficial — intercepta cada caso de uso de escrita, captura o estado do registro antes e depois da operação e grava a linha correspondente em `LOG_AUDITORIA` na mesma transação da escrita de negócio, com o contexto de negócio completo exigido por `LOG_AUDITORIA` como parâmetro obrigatório de entrada — decisão congelada em `decisions.md`, decisão #18; `arquitetura-tecnica.md`, Seção 10 e Seção 15, atualizadas. A técnica física do vínculo genérico de `LOG_AUDITORIA` foi resolvida separadamente — ver item B4.
+
+Resolvida no início da Fase 4 (congelamento de B4):
+- **B4 — Implementação técnica do vínculo genérico de auditoria**: referência polimórfica (`entidade_tipo`/`entidade_id`, e os pares equivalentes em `LOG_AUDITORIA.referencia_tipo`/`referencia_id` e `SUGESTÃO_IA.entidade_alvo_tipo`/`entidade_alvo_id`) congelada como mecanismo oficial — sem FK nativa do banco; integridade mitigada, não eliminada, pela validação na camada de aplicação que grava os registros de auditoria; mapeada em Hibernate/JPA como campos simples, sem `@Any`/`@ManyToAny` — decisão congelada em `decisions.md`, decisão #20; `arquitetura-tecnica.md` (Seção 10 e Seção 15), `arquitetura-fisica-banco.md` (Seções 6, 8, 9, 10), `modelo-logico.md` e `docs/modelagem-fisica/09-ia-auditoria.md` atualizados. A estratégia definitiva de indexação das colunas de referência genérica segue o critério objetivo de B3, já resolvida em nível arquitetural (`decisions.md`, decisão #37).
+
+Resolvida no início da Fase 4 (congelamento de D7):
+- **D7 — Vínculo direto `LANÇAMENTO_FINANCEIRO` ↔ `EMPRESA`**: premissa de negócio definida durante esta resolução — todo `LANÇAMENTO_FINANCEIRO` pertence obrigatoriamente a uma `EMPRESA` desde sua criação. `empresa_id` (FK, `NOT NULL`) acrescentado a `LANÇAMENTO_FINANCEIRO`, com preenchimento/validação (incluindo consistência com `VEÍCULO.empresa_id`) na camada de aplicação; `AÇÃO_PROPOSTA_IA` ganha `empresa_id` (FK, nullable) e o status "Aguardando Empresa", para propostas de IA sem Empresa ainda determinada — decisão congelada em `decisions.md`, decisão #21; `domain-model/09-lancamento-financeiro.md`, `domain-model/23-acao-proposta-ia.md`, `modelo-logico.md`, `docs/modelagem-fisica/02-lancamento-financeiro.md`, `docs/modelagem-fisica/09-ia-auditoria.md` e `arquitetura-tecnica.md` (Seção 11) atualizados.
+
+Resolvida no início da Fase 4 (congelamento de A8):
+- **A8 — Mecanismo da barreira reforçada para ações de IA de nível Alto**: reautenticação (senha) congelada como mecanismo oficial — no momento da confirmação de uma `AÇÃO_PROPOSTA_IA` de nível Alto, o usuário reinforma sua senha, verificada contra o hash já definido em T3 (Argon2), como controle adicional e independente da sessão/token JWT em uso; aplica-se exclusivamente à criação/confirmação de `LIQUIDAÇÃO_FINANCEIRA` e ações equivalentes (`AJUSTE_FINANCEIRO` já excluído pela Decisão 8). "Segundo aprovador" excluído da comparação técnica por reproduzir o cenário de usuário financeiro único já rejeitado em A3; "Confirmação simples reforçada" descartada por não oferecer verificação adicional de identidade — decisão congelada em `decisions.md`, decisão #22; `arquitetura-tecnica.md` (Seção 8 e Seção 15) atualizada. I5 (mesmo item, referenciado a partir da categoria IA) e I8 (campo para "segundo aprovador") removidos desta lista — I5 por ser o mesmo item de A8 sob outra categoria, I8 por depender de uma alternativa que não foi a escolhida.
+
+Resolvida na Fase 4, por auditoria documental (congelamento de D1):
+- **D1 — Existência de `EMPRESA.tipo`**: pendência reformulada ("quais valores `tipo` deve ter?" → "o atributo ainda pertence ao modelo?") e resolvida como remoção do campo — auditoria completa não encontrou nenhuma regra, decisão congelada, entidade ou mecanismo que consultasse ou dependesse de `tipo`, em nenhum momento da evolução do projeto; existência decorria só de herança do catálogo conceitual original, sem função confirmada — princípio 2 de modelagem aplicado. Decisão congelada em `decisions.md`, decisão #23; `domain-model/01-empresa.md`, `modelo-logico.md`, `modelagem-fisica/01-cadastros-basicos.md` e `database/02_tables/01_cadastros_basicos.sql` atualizados. `arquitetura-conceitual.md` permanece inalterado (nunca editado) — continua listando `tipo` no catálogo original, superado por esta decisão.
+
+Resolvida na Fase 4, por perda de necessidade de negócio (congelamento de D2):
+- **D2 — Identificação individual do sócio em "Retirada do Patrão"**: resolvida como não necessária — confirmado que existe apenas um patrão realizando retiradas; a classificação `Retirada do Patrão` (`MOVIMENTAÇÃO_BANCÁRIA`/`COMPRA_CARTÃO`) permanece exatamente como já implementada, sem diferenciação por sócio. Nenhuma estrutura (campo/entidade) chegou a ser criada — decisão é não criar nada. Decisão congelada em `decisions.md`, decisão #24. Nenhum documento de domínio, lógico, físico ou schema alterado.
+
+Resolvida na Fase 4, por resposta de negócio (congelamento de D3):
+- **D3 — Rateio pode ficar parcialmente pendente**: resolvido que sim — um Lançamento pode existir com `RATEIO_DESPESA` incompleto (soma menor que o valor do Lançamento) por tempo indeterminado, sem prazo para fechamento, confirmado pela operação real. Regra de soma exata (Decisão 10) passa a valer no fechamento do rateio, não a cada escrita. Nenhuma coluna/constraint nova — completude sempre calculada, nunca persistida (princípio 6). Decisão congelada em `decisions.md`, decisão #25; `domain-model/16-rateio-despesa.md`, `modelo-logico.md` e `modelagem-fisica/08-obras-veiculos-rateio.md` atualizados. D8 (edição retroativa de Rateio) permanece pendência distinta, não afetada.
+
+Resolvida na Fase 4, por confirmação de necessidade de negócio (congelamento de D4):
+- **D4 — Alocação operacional de Veículo a Obra sem despesa**: confirmada necessidade real (logística diária, base para sugestão automática de Obra e futura gestão de equipes). `VEÍCULO` ganha `obra_atual` (FK opcional para `OBRA`), independente da dimensão financeira já existente. Histórico de mudanças via `LOG_AUDITORIA` — nenhuma entidade dedicada de alocação criada (sem requisito confirmado de múltiplas alocações ou agendamento). Decisão congelada em `decisions.md`, decisão #26; `domain-model/07-veiculo.md`, `domain-model/03-obra.md`, `modelo-logico.md`, `modelagem-fisica/08-obras-veiculos-rateio.md` e schema físico atualizados.
+
+Resolvida na Fase 4, por resposta de negócio (congelamento de D5):
+- **D5 — Sincronização entre `COMPRA_CARTÃO` e `LANÇAMENTO_FINANCEIRO` gerado**: correção de `categoria`/`obra`/`veículo` em `COMPRA_CARTÃO` propaga automaticamente para Lançamentos já gerados, exceto quando já existe `RATEIO_DESPESA` vinculado (desacoplamento definitivo, correção passa a ser manual). Parcelas futuras já leem o valor vigente no momento do vencimento — mecanismo pré-existente, sem necessidade de propagação. Nenhuma alteração de schema — regra de aplicação. Decisão congelada em `decisions.md`, decisão #27; `domain-model/18-compra-cartao.md`, `domain-model/09-lancamento-financeiro.md`, `domain-model/21-parcela.md`, `domain-model/16-rateio-despesa.md` e `modelagem-fisica/06-cartao-credito.md` atualizados.
+
+Resolvida na Fase 4, por resposta de negócio (congelamento de D6):
+- **D6 — Vínculo Consórcio contemplado → Veículo, propagação aos Lançamentos de Parcela**: só Lançamentos gerados **após** a contemplação herdam automaticamente o `veículo` do Contrato Financeiro — Lançamentos já gerados antes permanecem sem propagação retroativa, por escolha de negócio (sem necessidade operacional confirmada). Diferente de D5, nenhum gatilho de desacoplamento aplicável — não há propagação para o passado em nenhuma circunstância. Nenhuma alteração de schema. Decisão congelada em `decisions.md`, decisão #28; `domain-model/20-contrato-financeiro.md`, `domain-model/21-parcela.md` e `domain-model/09-lancamento-financeiro.md` atualizados.
+
+Resolvida na Fase 4, por resposta de negócio (congelamento de D8):
+- **D8 — Edição de `RATEIO_DESPESA` após Aplicação de Liquidação já existente**: mantido o status quo — Rateio permanece livremente editável mesmo após liquidação, sem mecanismo equivalente a `AJUSTE_FINANCEIRO`. Correções de erro são feitas diretamente no registro. Rastreabilidade preservada só via `LOG_AUDITORIA` genérico, sem mecanismo dedicado. Nenhuma alteração de schema. Decisão congelada em `decisions.md`, decisão #29; `domain-model/16-rateio-despesa.md` atualizado.
+
+Resolvida na Fase 4, por resposta de negócio (congelamento de D9):
+- **D9 — Valores válidos de `OBRA.status`**: definidos como A executar / Em andamento / Pausada / Concluída, com transições A executar → Em andamento, Em andamento ⇄ Pausada, Em andamento → Concluída; valor inicial A executar. Schema físico ganha `CHECK`/`DEFAULT` (mesmo padrão de campos enumerados já existentes). Decisão congelada em `decisions.md`, decisão #30; `domain-model/03-obra.md`, `modelo-logico.md`, `modelagem-fisica/08-obras-veiculos-rateio.md` e schema físico atualizados.
+
+Resolvida na Fase 4, por resposta de negócio (congelamento de D10):
+- **D10 — Valores válidos de `VEÍCULO.tipo`**: definidos como Caminhão / Escavadeira / Pá carregadeira / Trator / Rolo compactador / Veículo leve / Terceiro / Outro. `Terceiro` separa custo de frota própria vs. equipamento alugado; `Outro` é categoria residual sem regra especial. Schema físico ganha `CHECK` (sem `DEFAULT` — nenhum valor inicial natural confirmado). Decisão congelada em `decisions.md`, decisão #31; `domain-model/07-veiculo.md`, `modelo-logico.md`, `modelagem-fisica/08-obras-veiculos-rateio.md` e schema físico atualizados.
+
+Resolvida na Fase 4, por reformulação e remoção de atributo (congelamento de D11):
+- **D11 — Existência de `PARCELA.status`**: pendência reformulada ("quais valores `status` deve ter?" → "o atributo ainda pertence ao modelo?") e resolvida como remoção do campo — não existe nas planilhas originais, nenhuma regra de negócio o utiliza, e a dimensão mais relevante ("gerou Lançamento ou não") já é 100% derivável de `lançamento_financeiro`, coluna já existente. Decisão congelada em `decisions.md`, decisão #32; `domain-model/21-parcela.md`, `modelo-logico.md`, `modelagem-fisica/06-cartao-credito.md` e schema físico atualizados.
+
+Resolvida na Fase 4, por análise conceitual de precedentes (congelamento de D12):
+- **D12 — Mutabilidade de `LIQUIDAÇÃO_FINANCEIRA`**: definida como imutável desde a criação — nenhum dos quatro campos pode ser alterado após o registro. Consistente com o texto literal do princípio 5 de modelagem (que cita "uma liquidação" como exemplo de fato histórico), com `APLICAÇÃO_DE_LIQUIDAÇÃO` (mesma família, já imutável) e com `MOVIMENTAÇÃO_BANCÁRIA` (campos factuais sem previsão de edição). Decisão trata exclusivamente da mutabilidade — não abre nem pressupõe pendência sobre mecanismo de correção. Nenhuma alteração de schema. Decisão congelada em `decisions.md`, decisão #33; `domain-model/10-liquidacao-financeira.md`, `modelo-logico.md` e `modelagem-fisica/03-liquidacao-financeira.md` atualizados.
+
+Resolvida na Fase 4, por resposta de negócio ancorada no princípio 5 (congelamento de D13):
+- **D13 — Mutabilidade e exclusão de `AJUSTE_FINANCEIRO`**: `tipo_ajuste`, `valor`, `data` e `observação` tornam-se imutáveis desde a criação, por regra confirmada — mesmo raciocínio de D12, ancorado no princípio 5 ("uma decisão já tomada"). Exclusão física já coberta pela regra geral do projeto (entidades de fato financeiro não sofrem `DELETE`, `arquitetura-fisica-banco.md` §7) — formalizada, sem regra nova. `usuário` fora do escopo, mutabilidade inalterada. M8 (Ajuste-de-Ajuste) não tocada. Nenhuma alteração de schema. Decisão congelada em `decisions.md`, decisão #34; `domain-model/15-ajuste-financeiro.md`, `modelo-logico.md`, `modelagem-fisica/05-ajuste-financeiro.md` e `arquitetura-fisica-banco.md` atualizados.
+
+**Marco**: com D13 resolvida, a categoria Domínio (Seção 1) não tem mais nenhuma pendência aberta.
+
+Resolvida na Fase 4, em nível arquitetural (congelamento de A6):
+- **A6 — Desenho arquitetural do módulo de consulta compartilhado (`application/consultas-financeiras`)**: definida responsabilidade, consumidores fechados (Balanço, Obra, Frota, IA), quatro categorias de consulta (custo agregado por dimensão; resultado financeiro derivado; saldo/posição em aberto; efeito líquido de correções) e contrato arquitetural — sem fixar métodos concretos nem fórmulas internas, que permanecem para quando cada funcionalidade for especificada. Ambiguidades de fórmula (sinal do Ajuste, exclusão de Cancelado, terminologia de status) permanecem documentadas em `plano-implementacao-sql.md`, deliberadamente não elevadas a pendência formal. Decisão congelada em `decisions.md`, decisão #35; `arquitetura-tecnica.md` atualizada. B2 tem seu pré-requisito satisfeito, mas continua aberta (falta caso real).
+
+Resolvida na Fase 4, por registro documental (congelamento de A7):
+- **A7 — Nota de reconciliação textual: "auditoria desde o dia 1" vs. "usuário não-bloqueante"**: registrada formalmente a explicação já decorrente do desenho existente — `LOG_AUDITORIA` sempre pôde existir desde o início graças ao "Usuário mínimo", sem depender do modelo completo de permissões; hoje a tensão tem só valor histórico, já que a pendência 5 foi encerrada por A2 (decisão #16). Decisão congelada em `decisions.md`, decisão #36; `domain-model/02-usuario.md` e `domain-model/24-log-auditoria.md` atualizados.
+
+**Marco**: com A7 resolvida, a categoria Arquitetura (Seção 2) também não tem mais nenhuma pendência aberta.
+
+Resolvida na Fase 4, em nível arquitetural (congelamento de B3):
+- **B3 — Estratégia de índice**: `PK`/`FK`/`UNIQUE` permanecem parte do schema inicial (já implementado). Índices adicionais entram no schema inicial só quando uma consulta ou regra de negócio já documentada demonstrar necessidade objetiva (critério aplicado durante a implementação de cada módulo) — sem lista de colunas congelada por esta decisão. Qualquer outro índice só é criado após medição real de desempenho. `obra_id`/`veiculo_id`/`data_competência`/`vencimento` permanecem como exemplos do critério, não obrigação. Decisão congelada em `decisions.md`, decisão #37; `arquitetura-fisica-banco.md` §8 atualizada.
+
+Resolvida na Fase 4, em nível arquitetural (congelamento de T4):
+- **T4 — Estratégia de hospedagem/infraestrutura**: implantação inicial prioriza plataforma PaaS gerenciada (categoria, não provedor específico), reduzindo carga operacional; escolha do provedor permanece decisão operacional, sem impacto na arquitetura. VPS e provedores de maior porte (AWS/Azure) continuam compatíveis, mas não são estratégia inicial — migração só quando houver necessidade real de escala/disponibilidade/integrações. Decisão congelada em `decisions.md`, decisão #38; `arquitetura-tecnica.md` §5.6 e Seção 15 atualizadas.
+
+Satisfeita documentalmente, sem decisão nova (M1):
+- **M1 — Vocabulário arquitetural duplo (Clean Architecture + Porta/Adaptador)**: já respondida por completo pela decisão #13 (A1), que declara Clean Architecture e Hexagonal/Ports & Adapters como **a mesma alternativa arquitetural**, não vocabulários concorrentes com fronteira própria — "Ports & Adapters" é só ênfase nos pontos que o domínio já trata como fronteira controlada (ferramentas de consulta da IA, importação de extrato bancário, futuro provedor de IA/Open Finance). Nenhuma decisão nova criada — nota documental cruzando para `decisions.md`, decisão #13, inserida em `arquitetura-tecnica.md`.

@@ -8,7 +8,7 @@
 
 **Quem cria**: digitação manual, ou futura importação de fatura.
 
-**Quem altera**: mesmo conjunto — digitação manual, sujeito à mesma ressalva de correção de cadastro.
+**Quem altera**: mesmo conjunto — digitação manual, sujeito à mesma ressalva de correção de cadastro. Uma correção em `categoria`/`obra`/`veículo` propaga automaticamente para os Lançamentos já gerados por esta Compra, exceto os que já têm `RATEIO_DESPESA` vinculado (D5, `decisions.md` decisão #27 — ver `09-lancamento-financeiro.md`, Seção 1).
 
 **Quem consulta**: `PARCELA` (uma Compra Terraplanagem gera Parcelas). `FATURA` apenas indiretamente, via `PARCELA` — a Fatura agrupa as Parcelas do ciclo, não as Compras diretamente (uma Compra parcelada em N vezes contribui, através de suas Parcelas, para até N Faturas diferentes ao longo do tempo; ver `19-fatura.md` e `21-parcela.md`).
 
@@ -48,7 +48,7 @@
 - **Campos mutuamente exclusivos**: nenhum identificado (diferente de `LANÇAMENTO_FINANCEIRO`, esta entidade não tem uma exclusividade fornecedor/cliente — é sempre uma compra, sempre com fornecedor).
 - **Campos obrigatórios por contexto**: nenhum além da obrigatoriedade geral.
 - **Regras de criação**: digitação manual, ou futura importação de fatura.
-- **Regras de alteração**: sujeitas à mesma cautela de correção de fatos financeiros já processados — não detalhado com precisão no conceitual.
+- **Regras de alteração**: sujeitas à mesma cautela de correção de fatos financeiros já processados — não detalhado com precisão no conceitual. Correção de `categoria`/`obra`/`veículo` (D5, resolvida): propaga automaticamente para (i) Parcelas ainda não vencidas — o Lançamento, ao nascer, já lê o valor vigente; (ii) Lançamentos já gerados **sem** `RATEIO_DESPESA` vinculado — atualizados automaticamente. Lançamentos já gerados **com** `RATEIO_DESPESA` ficam desacoplados definitivamente — sem propagação, correção manual.
 - **Regras de exclusão**: não definidas.
 - **Regras de auditoria**: toda alteração de campo deve ser registrada em `LOG_AUDITORIA`.
 - **Regras de integridade**: `cartão`, `fornecedor`, `categoria`, `obra` (quando preenchido) e `veículo` (quando preenchido) devem referenciar registros existentes.
@@ -78,6 +78,8 @@ Depende de `CARTÃO_CRÉDITO`, `FORNECEDOR` e `CATEGORIA` (obrigatórios). Depen
 
 ## 7. Checklist de decisões pendentes
 
-**Esta entidade depende de alguma decisão ainda pendente? Não diretamente.**
+**Esta entidade depende de alguma decisão ainda pendente? Não.**
 
 Nenhuma das 14 pendências numeradas do conceitual afeta esta entidade especificamente. A futura "importação de fatura" citada como possível origem (Seção 3 do conceitual) é uma integração futura já reconhecida como fora do núcleo (Seção 19 do conceitual) e não muda a estrutura de campos aqui modelada.
+
+~~D5 (`revisao-integridade-dominio.md`, achado crítico) — duplicação de `categoria`/`obra`/`veículo` com `LANÇAMENTO_FINANCEIRO`, sem regra de sincronização~~ — **Resolvida.** Propagação automática condicional definida — ver Seção 1 e Seção 4; `decisions.md`, decisão #27.

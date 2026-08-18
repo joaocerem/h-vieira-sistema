@@ -11,13 +11,12 @@ Aplica as convenções de `arquitetura-fisica-banco.md` às 5 entidades deste m�
 |---|---|---|---|
 | `id` | Identificador | Sim | PK |
 | `nome` | Texto curto | Sim | — |
-| `tipo` | Enumerado/lista fechada | Sim | Valores não definidos (D1) |
 
 - **PK**: `id` — `pk_empresas`
 - **FK**: nenhuma (entidade raiz)
-- **Constraints previstas**: `NOT NULL` em `nome`, `tipo`. Sem `UNIQUE` — o conceitual não define unicidade de nome entre Empresas. Sem `CHECK` de `tipo` — valores ainda não fechados (D1).
+- **Constraints previstas**: `NOT NULL` em `nome`. Sem `UNIQUE` — o conceitual não define unicidade de nome entre Empresas.
 - **Índices previstos**: nenhum além do implícito da PK — sem candidato de filtro/agregação frequente identificado.
-- **Observações**: nenhuma coluna de saldo (correto — saldo não pertence a Empresa em nenhum nível). Mecanismo de `tipo` (ENUM/CHECK/tabela de domínio) só decidido quando D1 fechar.
+- **Observações**: nenhuma coluna de saldo (correto — saldo não pertence a Empresa em nenhum nível). Coluna `tipo` removida (D1, `decisions.md`, decisão #23) — sem uso funcional identificado em nenhum ponto do projeto.
 
 ---
 

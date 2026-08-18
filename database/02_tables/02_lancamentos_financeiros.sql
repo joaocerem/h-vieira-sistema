@@ -1,6 +1,7 @@
 CREATE TABLE lancamentos_financeiros (
     id UUID DEFAULT gen_random_uuid(),
     tipo TEXT NOT NULL,
+    empresa_id UUID NOT NULL,
     categoria_id UUID NOT NULL,
     fornecedor_id UUID,
     cliente_id UUID,

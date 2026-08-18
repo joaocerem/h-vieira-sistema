@@ -23,7 +23,8 @@
 | Campo | Significado | Tipo conceitual | Obrigatório? | Valor padrão | Pode mudar depois de criado? | Quem pode alterar | Regra de validação | Observações |
 |---|---|---|---|---|---|---|---|---|
 | `nome` | Nome pelo qual a unidade do grupo é identificada (ex.: "H Vieira", "Helierti") | Texto | Sim | Nenhum | Sim (correção de cadastro) | Mesmo perfil que cria | Não pode ser vazio. O conceitual não define regra explícita de unicidade entre Empresas — não presumida aqui. | — |
-| `tipo` | Classificação da unidade dentro do grupo | Lista de valores predefinidos | Sim (campo principal listado no conceitual) | Nenhum | Indefinido — depende de como a pendência 1 for resolvida | Mesmo perfil que cria, sujeito à mesma ressalva | Não definida — os valores válidos são exatamente o objeto da pendência 1 | Ver Seção 7. O checklist do conceitual (Seção 18) já impede avançar o cadastro de Empresa sem resolver isso primeiro |
+
+**Nota sobre `tipo`**: o catálogo conceitual original (`arquitetura-conceitual.md`, Seção 3 — documento nunca alterado) lista `tipo` como campo de `EMPRESA`. O campo foi **removido do modelo** por decisão (D1, `decisions.md`, decisão #23) — auditoria documental completa não encontrou nenhuma regra, decisão congelada, entidade ou mecanismo que o utilizasse em toda a evolução do projeto; sua existência decorria só de herança do catálogo original, sem função de negócio jamais confirmada (princípio 2 de modelagem). Ver Seção 7.
 
 ---
 
@@ -41,13 +42,13 @@
 ## 4. Regras da entidade
 
 - **Campos mutuamente exclusivos**: nenhum identificado.
-- **Campos obrigatórios por contexto**: nenhum além da obrigatoriedade geral de `nome` e `tipo`.
+- **Campos obrigatórios por contexto**: nenhum além da obrigatoriedade geral de `nome`.
 - **Regras de criação**: sempre cadastro manual; nenhum outro módulo cria Empresa como efeito colateral.
 - **Regras de alteração**: alteração manual; toda alteração deve gerar entrada em `LOG_AUDITORIA` (princípio 10 do conceitual).
 - **Regras de exclusão**: não definidas no conceitual. Dado o princípio "nada desaparece" (princípio 5, aplicado a fatos financeiros) e a ausência de qualquer menção a exclusão de cadastro-base, não se deve presumir que uma Empresa com Contas/Veículos/Contratos vinculados possa ser excluída fisicamente — isso é uma observação, não uma regra confirmada.
-- **Regras de auditoria**: toda alteração de campo (`nome`, `tipo`) deve ser registrada por campo (regra 31 do conceitual).
+- **Regras de auditoria**: toda alteração de campo (`nome`) deve ser registrada por campo (regra 31 do conceitual).
 - **Regras de integridade**: Conta Bancária, Veículo e Contrato Financeiro não podem existir sem referenciar uma Empresa válida.
-- **Regras de negócio**: nenhuma regra de comportamento financeiro diferenciado por `tipo` de Empresa está definida no conceitual — esse é exatamente o conteúdo da pendência 1.
+- **Regras de negócio**: nenhuma definida — Empresa é puro cadastro de identidade organizacional (D1, decisão #23).
 
 ---
 
@@ -57,9 +58,9 @@
 |---|---|
 | Derivados | Nenhum |
 | Calculados | Nenhum |
-| Persistidos | `nome`, `tipo` |
-| Imutáveis | Nenhum — ambos os campos são corrigíveis por cadastro manual |
-| Auditáveis | `nome`, `tipo` |
+| Persistidos | `nome` |
+| Imutáveis | Nenhum — corrigível por cadastro manual |
+| Auditáveis | `nome` |
 
 ---
 
@@ -71,8 +72,6 @@
 
 ## 7. Checklist de decisões pendentes
 
-**Esta entidade depende de alguma decisão ainda pendente? Sim.**
+**Esta entidade depende de alguma decisão ainda pendente? Não — resolvida.**
 
-- **Qual decisão**: pendência 1 do conceitual — natureza jurídica das 6 "empresas" do grupo.
-- **Por que**: o campo `tipo` não pode ter seus valores válidos definidos, nem se sabe se ele deve acionar comportamento diferenciado no sistema (ex. relatórios fiscais separados), até essa decisão ser tomada. O próprio checklist de migração do conceitual (Seção 18) já condiciona o desenho do cadastro de Empresa a essa confirmação.
-- **O que muda na entidade**: os valores possíveis de `tipo` (hoje indefinidos); possivelmente novos campos ainda não previstos, caso a natureza jurídica definida exija dados adicionais (ex. um identificador fiscal formal, se alguma "empresa" for pessoa jurídica própria). Nenhum campo desse tipo é adicionado aqui, para não inventar estrutura não documentada — fica registrado como consequência em aberto, não como campo.
+- ~~Pendência 1 do conceitual — natureza jurídica das 6 "empresas" do grupo, para definir os valores válidos de `EMPRESA.tipo`~~ — **Resolvida (D1), com reformulação.** Auditoria documental completa (regras de negócio vigentes, decisões #1-#22, 24 entidades de domínio, modelagem lógica/física, schema implementado) não encontrou nenhum uso funcional do campo em toda a evolução do projeto. A pergunta original foi substituída por "o atributo ainda pertence ao modelo?", respondida como não — `tipo` foi **removido** da entidade (`decisions.md`, decisão #23). Se no futuro a natureza jurídica das unidades do grupo precisar acionar comportamento diferenciado, um campo equivalente deverá ser reintroduzido como nova decisão de modelagem, com definição de negócio concreta.

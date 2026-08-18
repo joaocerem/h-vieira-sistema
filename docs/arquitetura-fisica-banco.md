@@ -66,7 +66,7 @@ Tabela plural porque representa a coleção de registros, não o conceito de dom
 | Data | `DATE` | fatos sem componente de horário (`data_competência`, `vencimento`) |
 | Data/hora | `TIMESTAMPTZ` | eventos que exigem precisão temporal e ordenação exata (`LOG_AUDITORIA.data/hora`, `data_efetiva`) — sempre com fuso horário, nunca `TIMESTAMP` sem fuso, para eliminar ambiguidade |
 | Booleano | `BOOLEAN` | indicadores binários (`contemplado`) |
-| Enumerado/lista fechada | categoria reservada — mecanismo exato (`ENUM` nativo, `CHECK`, ou tabela de domínio) só decidido campo a campo, quando cada enumeração pendente (D9, D10, D11) for fechada |
+| Enumerado/lista fechada | categoria reservada — mecanismo exato (`ENUM` nativo, `CHECK`, ou tabela de domínio) decidido campo a campo, quando cada enumeração é fechada. `OBRA.status` (D9) e `VEÍCULO.tipo` (D10) já resolvidas como `CHECK` (`decisions.md`, decisões #30 e #31). `PARCELA.status` (D11) não se tornou um campo enumerado — foi removida do modelo (`decisions.md`, decisão #32); a categoria física deixou de se aplicar a este campo |
 
 Precisão e escala exatas de `NUMERIC`, e tamanho exato de `VARCHAR`, são decisão da modelagem física de cada campo — não desta etapa.
 
@@ -76,8 +76,8 @@ Precisão e escala exatas de `NUMERIC`, e tamanho exato de `VARCHAR`, são decis
 
 - **NOT NULL**: aplicado sempre que a entidade já declara o atributo obrigatório em `modelo-logico.md` — nunca a critério da implementação.
 - **UNIQUE**: só onde o conceitual declara explicitamente "cadastro único" (ex. `Cliente`, `Fornecedor`) — nunca presumido sem base textual.
-- **CHECK**: reservado a regras já fechadas e objetivas (ex. `tipo` ∈ {Despesa, Receita}; valores monetários positivos) — nunca para enumerações ainda pendentes (D9-D11), nem para regra de negócio multi-tabela (essa vive na camada de aplicação, `arquitetura-tecnica.md` Seção 4).
-- **FOREIGN KEY**: aplicada a toda referência lógica do modelo, exceto as referências genéricas de escopo fechado (`LOG_AUDITORIA`, `SUGESTÃO_IA.entidade_alvo`, "registro real" de `AÇÃO_PROPOSTA_IA`), cuja técnica depende da pendência B4 (Seção 9/10).
+- **CHECK**: reservado a regras já fechadas e objetivas (ex. `tipo` ∈ {Despesa, Receita}; valores monetários positivos; `OBRA.status`/D9 e `VEÍCULO.tipo`/D10, já fechadas — `decisions.md`, decisões #30 e #31) — nunca para enumerações ainda pendentes, nem para regra de negócio multi-tabela (essa vive na camada de aplicação, `arquitetura-tecnica.md` Seção 4). D11 não resultou em `CHECK` — `PARCELA.status` foi removida do modelo (`decisions.md`, decisão #32).
+- **FOREIGN KEY**: aplicada a toda referência lógica do modelo, exceto as referências genéricas de escopo fechado (`LOG_AUDITORIA`, `SUGESTÃO_IA.entidade_alvo`, "registro real" de `AÇÃO_PROPOSTA_IA`), cuja técnica é a referência polimórfica definida em B4 (decisão #20) — ausência de FK é resultado deliberado dessa escolha, não pendência (Seção 9/10).
 - **DEFAULT**: só onde o domínio já define um valor inicial claro (ex. `situação_administrativa` = Ativo; `classificação` = Não Classificada) — nunca inventado.
 
 ---
@@ -87,26 +87,28 @@ Precisão e escala exatas de `NUMERIC`, e tamanho exato de `VARCHAR`, são decis
 - **DELETE físico**: não utilizado em nenhuma entidade que represente fato financeiro, evento ou log — coerente com o princípio "nada desaparece" (princípio 5) e com `project-rules.md` ("nunca apagar lançamentos financeiros", "nunca remover auditoria"). Cadastros simples sem histórico vinculado podem, em tese, admitir exclusão física — decisão caso a caso da próxima etapa, não regra geral aqui.
 - **CASCADE**: nunca usado em `ON DELETE CASCADE` sobre entidade financeira — excluir um registro-pai nunca apaga silenciosamente fatos dependentes.
 - **RESTRICT**: política padrão para toda FK obrigatória do modelo. Exceção exige justificativa explícita registrada no momento (princípio 7).
-- **Preservação de histórico**: entidades/campos já declarados imutáveis em `modelo-logico.md` (`LANÇAMENTO_FINANCEIRO.valor` após Aplicação, `APLICAÇÃO_DE_LIQUIDAÇÃO` inteira, `LOG_AUDITORIA` inteira, `MOVIMENTAÇÃO_BANCÁRIA` exceto `classificação`) devem ter essa imutabilidade garantida no nível do schema, não só da aplicação — mecanismo exato (revogação de privilégio, trigger de bloqueio) é decisão da modelagem física de cada tabela.
+- **Preservação de histórico**: entidades/campos já declarados imutáveis em `modelo-logico.md` (`LANÇAMENTO_FINANCEIRO.valor` após Aplicação, `APLICAÇÃO_DE_LIQUIDAÇÃO` inteira, `LOG_AUDITORIA` inteira, `MOVIMENTAÇÃO_BANCÁRIA` exceto `classificação`, `AJUSTE_FINANCEIRO.tipo_ajuste`/`valor`/`data`/`observação` — D13, `decisions.md` decisão #34) devem ter essa imutabilidade garantida no nível do schema, não só da aplicação — mecanismo exato (revogação de privilégio, trigger de bloqueio) é decisão da modelagem física de cada tabela.
 
 ---
 
 ## 8. Índices
 
-Critérios arquiteturais apenas — nenhum índice de tabela específica listado aqui (pendência B3, Seção 10):
+**Estratégia definida em nível arquitetural (B3, `decisions.md` decisão #37)** — critério, não lista de colunas:
 
-- Toda FK recebe índice por padrão — PostgreSQL não cria índice automático em FK (diferente da PK).
-- Colunas usadas em filtro/agregação frequente (datas de competência, campos de `status`/`classificação`) são candidatas naturais, a confirmar por tabela na próxima etapa.
+- `PK`, `FK` e `UNIQUE` permanecem parte do schema inicial (já implementado); toda FK recebe índice por padrão — PostgreSQL não cria índice automático em FK (diferente da PK).
+- Índices adicionais entram no schema inicial **apenas** quando uma consulta ou regra de negócio já documentada demonstrar objetivamente sua necessidade — critério aplicado durante a implementação de cada módulo, às consultas já aprovadas (ex. categorias de A6, `decisions.md` decisão #35). Esta seção não congela nenhuma lista de colunas.
+- Exemplos já documentados de aplicação do critério (não uma lista obrigatória): `obra_id`/`veiculo_id`/`data_competência` em `lancamentos_financeiros`; `vencimento` em `parcelas`.
+- Qualquer outro índice só é criado depois, por medição real de desempenho (`EXPLAIN`, monitoramento ou testes com volume representativo) — nunca por suposição.
 
 ---
 
 ## 9. Auditoria
 
-Requisitos que a implementação física deve obedecer, sem resolver a técnica exata (pendência B4):
+Requisitos que a implementação física deve obedecer, com a técnica exata já definida (B4, decisão #20):
 
 - Toda entidade da lista fechada de entidades auditáveis deve ter suas alterações capturadas, por campo, em `LOG_AUDITORIA`, de forma automática — nunca dependente de chamada manual da aplicação (mecanismo já exigido por `arquitetura-tecnica.md`, Seção 10; não redecidido aqui).
 - `LOG_AUDITORIA` é imune a `UPDATE`/`DELETE` no nível do schema (Seção 7), sem exceção.
-- A referência genérica de `LOG_AUDITORIA.entidade`/`id` (e as equivalentes de `SUGESTÃO_IA`/`AÇÃO_PROPOSTA_IA`) permanece restrita à lista fechada de entidades auditáveis quando implementada — a técnica (referência polimórfica ou outra) é a pendência B4, não decidida aqui.
+- A referência genérica de `LOG_AUDITORIA.entidade`/`id` (e as equivalentes de `SUGESTÃO_IA`/`AÇÃO_PROPOSTA_IA`) permanece restrita à lista fechada de entidades auditáveis quando implementada — a técnica é a referência polimórfica definida em B4 (`decisions.md`, decisão #20), sem FK nativa; a validação de existência do registro referenciado é responsabilidade da camada de aplicação.
 - Todo timestamp de auditoria usa `TIMESTAMPTZ` (Seção 5), para ordenação cronológica exata entre eventos.
 
 ---
@@ -118,11 +120,13 @@ Só as que influenciam decisão física direta (lista completa e detalhada perma
 | Item | Impacto na modelagem física |
 |---|---|
 | B1 | **Resolvida nesta etapa** (PostgreSQL) — nota informativa, não mais pendência |
-| B3 — estratégia de índice | Ainda não decidida; critérios gerais já fixados (Seção 8) |
-| B4 — técnica do vínculo genérico | Ainda não decidida; impacta diretamente como `LOG_AUDITORIA`, `SUGESTÃO_IA` e `AÇÃO_PROPOSTA_IA` serão fisicamente modeladas |
-| D9, D10, D11 — enumerações não fechadas (`OBRA.status`, `VEÍCULO.tipo`, `PARCELA.status`) | Determinam se o campo físico será `ENUM`, `CHECK` ou tabela de domínio (Seção 5) |
-| D12 — mutabilidade de `LIQUIDAÇÃO_FINANCEIRA` | Determina se a tabela permite `UPDATE` ou é append-only |
-| D13 — regras de alteração/exclusão de `AJUSTE_FINANCEIRO` | Mesma natureza de impacto que D12 |
+| B3 — estratégia de índice | **Resolvida** em nível arquitetural (`decisions.md` decisão #37) — critério objetivo definido (Seção 8); nenhuma lista de colunas congelada, aplicado módulo a módulo; nota informativa, não mais pendência |
+| B4 — técnica do vínculo genérico | **Resolvida** (referência polimórfica, `decisions.md` decisão #20) — nota informativa, não mais pendência; estratégia de índice das colunas de referência genérica segue o mesmo critério de B3, aplicada quando houver necessidade objetiva demonstrada |
+| D9 — enumeração de `OBRA.status` | **Resolvida** (A executar/Em andamento/Pausada/Concluída, `decisions.md` decisão #30) — implementada como `CHECK`; nota informativa, não mais pendência |
+| D10 — enumeração de `VEÍCULO.tipo` | **Resolvida** (Caminhão/Escavadeira/Pá carregadeira/Trator/Rolo compactador/Veículo leve/Terceiro/Outro, `decisions.md` decisão #31) — implementada como `CHECK`; nota informativa, não mais pendência |
+| D11 — existência de `PARCELA.status` | **Resolvida** (`decisions.md` decisão #32) — campo removido do modelo, não enumerado; estado da Parcela sempre calculado a partir de `vencimento`/`lancamento_financeiro_id`; nota informativa, não mais pendência |
+| D12 — mutabilidade de `LIQUIDAÇÃO_FINANCEIRA` | **Resolvida** (imutável desde a criação, `decisions.md` decisão #33) — tabela append-only para esta entidade, sem `UPDATE` previsto; mecanismo exato de bloqueio ainda não escolhido; nota informativa, não mais pendência |
+| D13 — mutabilidade e exclusão de `AJUSTE_FINANCEIRO` | **Resolvida** (imutável desde a criação; exclusão coberta pela regra geral de fato financeiro, `decisions.md` decisão #34) — tabela append-only, sem `UPDATE` previsto para `tipo_ajuste`/`valor`/`data`/`observação`; mecanismo exato de bloqueio ainda não escolhido; nota informativa, não mais pendência |
 
 ---
 
