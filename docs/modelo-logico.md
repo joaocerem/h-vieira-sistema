@@ -199,10 +199,10 @@ Convenções puramente lógicas — nenhuma delas é uma decisão de banco de da
 
 ### 3.20 — CONTRATO_FINANCEIRO
 - **Finalidade**: Financiamento ou Consórcio — mesma estrutura, campo `tipo` diferencia (entidade única, Decisão 4).
-- **Atributos lógicos**: `tipo` (persistido, obrigatório, imutável — Financiamento/Consórcio); `empresa` (FK, obrigatório); `conta_bancária` (FK, obrigatório); `instituição` (persistido, obrigatório); `valor_contratado` (persistido, obrigatório — nunca usado no cálculo de saldo devedor); `taxa` (persistido, **condicional a `tipo`=Financiamento**, conceitualmente inexistente para Consórcio); `grupo-cota` (persistido, **condicional a `tipo`=Consórcio**); `contemplado` (persistido, **condicional a `tipo`=Consórcio**).
+- **Atributos lógicos**: `tipo` (persistido, obrigatório, imutável — Financiamento/Consórcio); `empresa` (FK, obrigatório); `conta_bancária` (FK, obrigatório); `fornecedor` (FK, obrigatório — **[atualização, decisão #40]** substitui `instituição` texto livre); `valor_contratado` (persistido, obrigatório — nunca usado no cálculo de saldo devedor; **[decisão #40]** também base da divisão entre Parcelas); `número de parcelas` (persistido, obrigatório — **[campo novo, decisão #40]**); `data de vencimento da primeira parcela` (persistido, obrigatório — **[campo novo, decisão #40]**); `taxa` (persistido, **condicional a `tipo`=Financiamento**, conceitualmente inexistente para Consórcio); `grupo-cota` (persistido, **condicional a `tipo`=Consórcio**); `contemplado` (persistido, **condicional a `tipo`=Consórcio**).
 - **Identificador lógico**: identificador único de Contrato Financeiro.
-- **Relacionamentos e cardinalidades**: Empresa 1:N Contrato Financeiro; Conta Bancária 1:N Contrato Financeiro; Contrato Financeiro 1:N Parcela; Contrato Financeiro N:1 Veículo (opcional, só Consórcio contemplado).
-- **Dependências**: Empresa e Conta Bancária (obrigatórios).
+- **Relacionamentos e cardinalidades**: Empresa 1:N Contrato Financeiro; Conta Bancária 1:N Contrato Financeiro; Fornecedor 1:N Contrato Financeiro; Contrato Financeiro 1:N Parcela; Contrato Financeiro N:1 Veículo (opcional, só Consórcio contemplado).
+- **Dependências**: Empresa, Conta Bancária e Fornecedor (obrigatórios).
 - **Observações**: `taxa` e `grupo-cota`/`contemplado` são **mutuamente exclusivos por restrição de negócio**, não validação de interface (Decisão 4). Saldo devedor **não é atributo** — sempre soma de Parcelas em aberto, nunca `valor_contratado` menos pago (Decisão 9).
 
 ### 3.21 — PARCELA

@@ -7,6 +7,8 @@ Tabela: `contratos_financeiros`. Categorias de tipo físico referenciam `arquite
 
 **Finalidade**: Financiamento ou Consórcio — mesma estrutura, campo `tipo` diferencia (entidade única, Decisão 4).
 
+**[Nota de atualização posterior — Fase 4, decisão #40]** Duas lacunas encontradas na implementação do backend (nenhum campo permitia calcular as Parcelas automaticamente; `instituicao` era texto livre, sem vínculo com `FORNECEDOR`) foram resolvidas por resposta de negócio: `instituicao` **removida**, substituída por `fornecedor_id` (FK, `NOT NULL`, → `fornecedores.id`); colunas `numero_parcelas` (`NOT NULL`) e `data_vencimento_primeira_parcela` (`NOT NULL`) **adicionadas**. Aplicado via migration Flyway `V14` — tabela sem registros no momento da alteração. As seções abaixo preservam o texto original da Fase 3 (histórico) com anotações pontuais marcando o que mudou; ver `decisions.md`, decisão #40, para a decisão completa.
+
 ---
 
 ## Colunas
@@ -17,8 +19,11 @@ Tabela: `contratos_financeiros`. Categorias de tipo físico referenciam `arquite
 | `tipo` | Enumerado — fechado (Financiamento / Consórcio) | Sim | Imutável (inferência) |
 | `empresa_id` | Identificador (FK) | Sim | → `empresas.id` |
 | `conta_bancaria_id` | Identificador (FK) | Sim | → `contas_bancarias.id` |
-| `instituicao` | Texto curto | Sim | — |
-| `valor_contratado` | Monetário (`NUMERIC`) | Sim | Nunca usado no cálculo de saldo devedor (Decisão 9) |
+| ~~`instituicao`~~ | ~~Texto curto~~ | ~~Sim~~ | **[removida — decisão #40]** substituída por `fornecedor_id` abaixo |
+| `fornecedor_id` | Identificador (FK) | Sim | **[nova — decisão #40]** → `fornecedores.id` |
+| `valor_contratado` | Monetário (`NUMERIC`) | Sim | Nunca usado no cálculo de saldo devedor (Decisão 9). **[decisão #40]** também base da divisão entre Parcelas |
+| `numero_parcelas` | Numérico inteiro | Sim | **[nova — decisão #40]** determina quantas Parcelas são geradas |
+| `data_vencimento_primeira_parcela` | Data | Sim | **[nova — decisão #40]** vencimento da 1ª Parcela; seguintes mensalmente, mesmo dia |
 | `taxa` | Percentual (`NUMERIC`) | Condicional | Só quando `tipo` = Financiamento; conceitualmente inexistente para Consórcio |
 | `grupo_cota` | Texto curto | Condicional | Só quando `tipo` = Consórcio |
 | `contemplado` | Booleano | Condicional | Só quando `tipo` = Consórcio; nasce `Não` |
@@ -33,9 +38,10 @@ Tabela: `contratos_financeiros`. Categorias de tipo físico referenciam `arquite
 - `fk_contratos_financeiros_empresa` (`empresa_id` → `empresas.id`), `ON DELETE RESTRICT`.
 - `fk_contratos_financeiros_conta_bancaria` (`conta_bancaria_id` → `contas_bancarias.id`), `ON DELETE RESTRICT`.
 - `fk_contratos_financeiros_veiculo` (`veiculo_id` → `veiculos.id`), `ON DELETE RESTRICT`.
+- **[nova — decisão #40]** `fk_contratos_financeiros_fornecedor` (`fornecedor_id` → `fornecedores.id`), `ON DELETE RESTRICT`.
 
 ## NOT NULL
-`id`, `tipo`, `empresa_id`, `conta_bancaria_id`, `instituicao`, `valor_contratado`. `taxa`/`grupo_cota`/`contemplado`/`veiculo_id` nuláveis a nível de coluna — obrigatoriedade condicional resolvida via `CHECK`.
+`id`, `tipo`, `empresa_id`, `conta_bancaria_id`, `fornecedor_id` (**decisão #40**, substitui `instituicao`), `valor_contratado`, `numero_parcelas` (**decisão #40**), `data_vencimento_primeira_parcela` (**decisão #40**). `taxa`/`grupo_cota`/`contemplado`/`veiculo_id` nuláveis a nível de coluna — obrigatoriedade condicional resolvida via `CHECK`.
 
 ## UNIQUE
 Nenhuma — o conceitual não declara cadastro único para Contrato Financeiro.
@@ -51,7 +57,7 @@ Nenhuma — o conceitual não declara cadastro único para Contrato Financeiro.
 - `contemplado` = `false` (Não) — aplica-se ao contexto de Consórcio (`tipo`=Consórcio); inferência já registrada no domínio ("um Consórcio nasce não contemplado", `20-contrato-financeiro.md` Seção 2).
 
 ## Índices previstos
-Um por FK (`empresa_id`, `conta_bancaria_id`, `veiculo_id`) — política padrão, `arquitetura-fisica-banco.md` §8.
+Um por FK (`empresa_id`, `conta_bancaria_id`, `veiculo_id`, `fornecedor_id` — **decisão #40**) — política padrão, `arquitetura-fisica-banco.md` §8.
 
 ## Observações
 - **Saldo devedor não é campo desta tabela.** Sempre a soma das Parcelas ainda em aberto vinculadas a este Contrato (via `parcelas.contrato_financeiro_id`) — nunca `valor_contratado` menos pago (Decisão 9). Fora do escopo de `CHECK` (multi-tabela, multi-linha, camada de aplicação — `arquitetura-fisica-banco.md` §6); resolvido por consulta/view, nunca persistido.

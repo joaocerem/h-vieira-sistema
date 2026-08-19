@@ -954,3 +954,74 @@ Decisões técnicas resolvidas em sessões posteriores à Etapa 7, com a mesma f
     - **Consequência direta**: nenhuma alteração de schema, mecanismo ou dependência já
       congelada — decisão puramente de estratégia de implantação.
     - **Onde está discutida**: `arquitetura-tecnica.md`, §5.6 e Seção 15.
+
+39. **Fórmula de divisão de valor e cálculo de vencimento das Parcelas de `COMPRA_CARTÃO`**:
+    lacuna encontrada durante a Fase 4 (implementação do backend, não pré-catalogada em
+    `pendencias.md`) — nenhum documento definia como `COMPRA_CARTÃO.valor` é dividido entre
+    as N Parcelas quando a divisão não é exata, nem a fórmula que relaciona a `data` da
+    Compra e `CARTÃO_CRÉDITO.dia_fechamento`/`dia_vencimento` ao `vencimento` de cada
+    Parcela — ambos campos obrigatórios (`NOT NULL`) que o próprio sistema deveria calcular
+    ao gerar as Parcelas. Resolvida por resposta de negócio direta:
+    - **Divisão de valor**: as primeiras N-1 Parcelas recebem `valor_total ÷ N`, truncado
+      (arredondado para baixo) na segunda casa decimal; a última Parcela recebe o valor
+      residual (`valor_total` menos a soma das N-1 primeiras), absorvendo integralmente a
+      diferença de arredondamento. Exemplo confirmado: R$100,00 em 3× = R$33,33 + R$33,33 +
+      R$33,34.
+    - **Cálculo de vencimento**: o "ciclo" de uma Compra é determinado pela comparação entre
+      o dia da `data` da Compra e `dia_fechamento` do Cartão — dia ≤ `dia_fechamento` entra
+      no ciclo do mês corrente da compra; dia > `dia_fechamento` entra no ciclo do mês
+      seguinte. O vencimento da 1ª Parcela é o dia `dia_vencimento` dentro do mês desse
+      ciclo (ajustado para o último dia do mês quando `dia_vencimento` não existir nesse
+      mês, ex. dia 31 em fevereiro — necessidade técnica de calendário, não regra de
+      negócio); cada Parcela seguinte vence um mês depois, sempre no dia `dia_vencimento`.
+    - **Alternativas descartadas**: nenhuma — a pendência era uma lacuna pura de fórmula
+      (nenhum candidato concorrente a comparar), mesma natureza de D9/D10.
+    - **Motivo da escolha**: resposta de negócio direta, sem ambiguidade, descrevendo
+      exatamente o funcionamento real do cartão de crédito já em uso.
+    - **Desvantagens conhecidas e aceitas**: nenhuma identificada — a fórmula reflete o
+      comportamento real já esperado pela operação.
+    - **Consequência direta**: nenhuma alteração de schema físico — mecanismo de camada de
+      aplicação, calculado no momento da criação de `COMPRA_CARTÃO`. Documentado em
+      `domain-model/18-compra-cartao.md` e `domain-model/21-parcela.md`.
+    - **Onde está discutida**: descoberta e resposta de negócio nesta sessão (Fase 4);
+      `domain-model/18-compra-cartao.md`, Seção 2 e Seção 4; `domain-model/21-parcela.md`,
+      Seção 2.
+
+40. **Estrutura de parcelamento e referência de credor de `CONTRATO_FINANCEIRO`**: lacunas
+    encontradas durante a Fase 4 (implementação do backend, não pré-catalogadas em
+    `pendencias.md`) — `CONTRATO_FINANCEIRO` não tinha nenhum campo que permitisse ao
+    sistema calcular suas Parcelas automaticamente (diferente de `COMPRA_CARTÃO`, que tem
+    `valor`/`nº parcelas`), e `instituição` era texto livre, sem vínculo com `FORNECEDOR`,
+    impedindo preencher `LANÇAMENTO_FINANCEIRO.fornecedor` (obrigatório quando `tipo` =
+    Despesa) a partir de uma Parcela de Contrato. Resolvidas por resposta de negócio direta:
+    - **Plano de parcelamento**: `CONTRATO_FINANCEIRO` ganha dois campos novos, informados no
+      cadastro — `número de parcelas` e `data de vencimento da primeira parcela`. `valor
+      contratado` (campo já existente) passa a ser também a base da divisão entre as
+      Parcelas — reaproveitado, não duplicado. Divisão de valor: mesma fórmula da decisão
+      #39 (últimas N-1 truncadas na 2ª casa decimal; última absorve o resíduo). Vencimentos:
+      1ª Parcela na data informada; as seguintes, mensalmente, no mesmo dia do mês da 1ª
+      (ajustado para o último dia do mês quando esse dia não existir no mês seguinte —
+      mesma necessidade técnica de calendário já usada na decisão #39, não regra de
+      negócio nova).
+    - **Referência de credor**: `instituição` (texto livre) é **removida** e substituída por
+      `fornecedor` (referência obrigatória para `FORNECEDOR`) — bancos e instituições
+      financeiras passam a ser cadastrados como Fornecedor, como qualquer outro credor.
+      Elimina duplicação de cadastro e permite que `LANÇAMENTO_FINANCEIRO.fornecedor`,
+      gerado por uma Parcela de Contrato Financeiro, referencie diretamente o mesmo
+      `fornecedor_id` do Contrato — sem mecanismo de resolução/lookup adicional.
+    - **Alternativas descartadas**: nenhuma — ambas as lacunas eram puras (nenhum campo
+      existente cobria a necessidade, nenhum candidato concorrente a comparar), mesma
+      natureza de D9/D10/decisão #39.
+    - **Motivo da escolha**: resposta de negócio direta, sem ambiguidade, e diretamente
+      compatível com a estrutura já congelada (reaproveita `valor_contratado` em vez de
+      criar um campo redundante; reaproveita `FORNECEDOR`, já existente, em vez de criar uma
+      nova entidade "Instituição Financeira").
+    - **Desvantagens conhecidas e aceitas**: nenhuma identificada.
+    - **Consequência direta**: `contratos_financeiros.instituicao` removida do schema físico;
+      `contratos_financeiros.fornecedor_id` (FK, `NOT NULL`), `numero_parcelas` (`NOT NULL`)
+      e `data_vencimento_primeira_parcela` (`NOT NULL`) adicionadas — migration Flyway V14,
+      tabela sem registros no momento da alteração (sem necessidade de migração de dados).
+      `domain-model/20-contrato-financeiro.md`, `modelo-logico.md` e
+      `modelagem-fisica/07-contrato-financeiro.md` atualizados.
+    - **Onde está discutida**: descoberta e resposta de negócio nesta sessão (Fase 4);
+      `domain-model/20-contrato-financeiro.md`, Seção 2 e Seção 4; `domain-model/05-fornecedor.md`.

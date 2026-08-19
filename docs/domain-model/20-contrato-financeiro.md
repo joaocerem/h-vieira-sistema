@@ -23,8 +23,10 @@
 | `tipo` | Se é Financiamento ou Consórcio | Lista de valores (Financiamento / Consórcio) | Sim | Nenhum | Não — inferência estrutural forte | — | Um dos dois valores | Determina quais dos campos condicionais abaixo se aplicam |
 | `empresa` | Empresa titular do Contrato | Referência para outra entidade (Empresa) | Sim | Nenhum | Não definido | Cadastro manual | Deve referenciar uma Empresa existente | — |
 | `conta_bancária` | Conta Bancária associada ao Contrato | Referência para outra entidade (Conta Bancária) | Sim | Nenhum | Não definido | Cadastro manual | Deve referenciar uma Conta Bancária existente | — |
-| `instituição` | Instituição financeira contratada | Texto | Sim | Nenhum | Sim (correção de cadastro) | Cadastro manual | Não vazio | — |
-| `valor_contratado` | Valor originalmente contratado — o compromisso firmado na origem | Valor monetário | Sim | Nenhum | Não definido | Cadastro manual | Deve ser um valor monetário válido | Representa apenas o compromisso originalmente firmado; continua sendo dado de negócio relevante para consulta, comparação e histórico, mas **nunca** é utilizado para calcular saldo devedor pela fórmula "valor contratado menos valor pago" — essa fórmula é inválida para este modelo (ver Seção 4) |
+| `fornecedor` | Instituição financeira contratada (banco/credor) | Referência para outra entidade (Fornecedor) | Sim | Nenhum | Sim (correção de cadastro) | Cadastro manual | Deve referenciar um Fornecedor existente | **[Atualização — decisão #40, Fase 4]** Substitui o campo `instituição` (texto livre) do catálogo original — bancos/instituições financeiras são cadastrados como `FORNECEDOR`, como qualquer outro credor. Permite que `LANÇAMENTO_FINANCEIRO.fornecedor`, gerado por uma Parcela deste Contrato, referencie diretamente o mesmo `fornecedor_id` |
+| `valor_contratado` | Valor originalmente contratado — o compromisso firmado na origem | Valor monetário | Sim | Nenhum | Não definido | Cadastro manual | Deve ser um valor monetário válido | Representa apenas o compromisso originalmente firmado; continua sendo dado de negócio relevante para consulta, comparação e histórico, mas **nunca** é utilizado para calcular saldo devedor pela fórmula "valor contratado menos valor pago" — essa fórmula é inválida para este modelo (ver Seção 4). **[Atualização — decisão #40]** Também é a base da divisão automática entre as Parcelas geradas (ver `número de parcelas` abaixo) — reaproveitado, não duplicado |
+| `número de parcelas` | Em quantas parcelas o Contrato é dividido | Número inteiro | Sim | Nenhum | Não — mesma inferência já usada em `COMPRA_CARTÃO.nº parcelas` | Cadastro manual | Deve ser um número inteiro positivo | **[Campo novo — decisão #40, Fase 4]** Determina quantos registros de `PARCELA` são gerados. Divisão do `valor_contratado`: fórmula da decisão #39 (últimas N-1 truncadas na 2ª casa decimal; última absorve o resíduo) |
+| `data de vencimento da primeira parcela` | Data em que a 1ª Parcela vence | Data | Sim | Nenhum | Não | Cadastro manual | Deve ser uma data válida | **[Campo novo — decisão #40, Fase 4]** As Parcelas seguintes vencem mensalmente, no mesmo dia desta data (ajustado para o último dia do mês quando esse dia não existir no mês) |
 | `taxa` | Taxa de juros do Financiamento | Percentual | Obrigatório quando `tipo` = Financiamento; **conceitualmente inexistente** quando `tipo` = Consórcio — não apenas vazio | Nenhum | Não definido | Cadastro manual | Só pode ser utilizado quando `tipo` = Financiamento — restrição de negócio do domínio, não apenas validação de interface | Mutuamente exclusivo com `grupo-cota`/`contemplado` |
 | `grupo-cota` | Identificação do grupo e cota do Consórcio | Texto | Obrigatório quando `tipo` = Consórcio; **conceitualmente inexistente** quando `tipo` = Financiamento — não apenas vazio | Nenhum | Não definido | Cadastro manual | Só pode ser utilizado quando `tipo` = Consórcio — restrição de negócio do domínio, não apenas validação de interface | Mutuamente exclusivo com `taxa` |
 | `contemplado` | Se o Consórcio já foi contemplado | Indicador (Sim/Não) | Obrigatório quando `tipo` = Consórcio; **conceitualmente inexistente** quando `tipo` = Financiamento — não apenas vazio | Não (inferência — um Consórcio nasce não contemplado) | Sim, no momento da contemplação | Cadastro manual | Só pode ser utilizado quando `tipo` = Consórcio — restrição de negócio do domínio, não apenas validação de interface | Quando passa a Sim, pode vincular-se a um Veículo (Seção 10 do conceitual) |
@@ -66,7 +68,7 @@
 |---|---|
 | Derivados | Nenhum |
 | Calculados | Nenhum campo próprio — "saldo devedor" não é campo desta entidade; é sempre a soma das Parcelas ainda em aberto, calculada em consulta — nunca a partir de `valor_contratado` (ver Seção 4) |
-| Persistidos | `tipo`, `empresa`, `conta_bancária`, `instituição`, `valor_contratado`, `taxa`, `grupo-cota`, `contemplado`, `veículo` |
+| Persistidos | `tipo`, `empresa`, `conta_bancária`, `fornecedor`, `valor_contratado`, `número de parcelas`, `data de vencimento da primeira parcela`, `taxa`, `grupo-cota`, `contemplado`, `veículo` |
 | Imutáveis | `tipo` (por inferência) |
 | Auditáveis | Todos os campos |
 
@@ -74,7 +76,7 @@
 
 ## 6. Dependências com outras entidades
 
-Depende de `EMPRESA` e `CONTA_BANCÁRIA` (obrigatórios). Depende opcionalmente de `VEÍCULO` (quando Consórcio contemplado). É referenciado por `PARCELA`.
+Depende de `EMPRESA`, `CONTA_BANCÁRIA` e `FORNECEDOR` (obrigatórios — `FORNECEDOR` desde a decisão #40, Fase 4, substituindo o antigo campo texto `instituição`). Depende opcionalmente de `VEÍCULO` (quando Consórcio contemplado). É referenciado por `PARCELA`.
 
 ---
 
@@ -89,3 +91,5 @@ Os campos condicionais (`taxa`/`grupo-cota`/`contemplado`) deixaram de ser apena
 **Princípio geral registrado a partir desta decisão** (`principios-de-modelagem.md`, princípio 1): entidades só devem ser separadas quando existir diferença real de comportamento de negócio — diferenças apenas de atributos específicos não justificam novas entidades.
 
 ~~D6 (`revisao-integridade-dominio.md`, achado crítico) — vínculo Consórcio contemplado → Veículo não propagado aos Lançamentos de Parcela~~ — **Resolvida.** Só Lançamentos gerados após a contemplação herdam `veículo` automaticamente; sem propagação retroativa — ver Seção 2 e Seção 4; `decisions.md`, decisão #28.
+
+~~Estrutura de parcelamento inexistente (nenhum campo permitia calcular as Parcelas) e `instituição` como texto livre (sem vínculo com Fornecedor, impedindo preencher `LANÇAMENTO_FINANCEIRO.fornecedor`)~~ — **Resolvida (Fase 4).** Ver notas na Seção 2; `decisions.md`, decisão #40.

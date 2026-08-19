@@ -30,6 +30,8 @@
 | `veículo` | Veículo ao qual a compra é atribuída | Referência para outra entidade (Veículo) | Não | Nenhum (vazio) | Sim | Usuário | — | Pode coexistir com `obra` |
 | `nº parcelas` | Em quantas parcelas a compra foi dividida | Número inteiro | Sim | 1 (inferência — uma compra à vista tem uma única parcela) | Não — inferência, o parcelamento é definido no momento da compra | Usuário | Deve ser um número inteiro positivo | Determina quantos registros de `PARCELA` são gerados |
 
+**[Nota de atualização — decisão #39, Fase 4]** A fórmula de divisão de `valor` entre as N Parcelas geradas e a fórmula de cálculo do `vencimento` de cada uma (a partir de `data` desta Compra e `dia_fechamento`/`dia_vencimento` do Cartão) — lacunas não cobertas quando este documento foi originalmente escrito — estão definidas em `decisions.md`, decisão #39, e detalhadas em `21-parcela.md`, Seção 2.
+
 ---
 
 ## 3. Relacionamentos
@@ -83,3 +85,5 @@ Depende de `CARTÃO_CRÉDITO`, `FORNECEDOR` e `CATEGORIA` (obrigatórios). Depen
 Nenhuma das 14 pendências numeradas do conceitual afeta esta entidade especificamente. A futura "importação de fatura" citada como possível origem (Seção 3 do conceitual) é uma integração futura já reconhecida como fora do núcleo (Seção 19 do conceitual) e não muda a estrutura de campos aqui modelada.
 
 ~~D5 (`revisao-integridade-dominio.md`, achado crítico) — duplicação de `categoria`/`obra`/`veículo` com `LANÇAMENTO_FINANCEIRO`, sem regra de sincronização~~ — **Resolvida.** Propagação automática condicional definida — ver Seção 1 e Seção 4; `decisions.md`, decisão #27.
+
+~~Fórmula de divisão de `valor` entre Parcelas e de cálculo de `vencimento` de cada uma~~ — **Resolvida (Fase 4).** Ver nota na Seção 2; `decisions.md`, decisão #39.

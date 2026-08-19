@@ -15,3 +15,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+hvieira:
+  conciliacao:
+    # T6 (docs/pendencias.md) — tolerância de dias no matching automático de conciliação. Parâmetro
+    # operacional configurável, nunca uma constante fixa no código (ver ConciliacaoProperties).
+    tolerancia-dias-matching: 2
