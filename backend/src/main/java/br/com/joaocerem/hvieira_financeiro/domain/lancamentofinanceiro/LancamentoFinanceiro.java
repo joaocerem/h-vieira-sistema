@@ -85,13 +85,25 @@ public class LancamentoFinanceiro {
     @Column(name = "origem", nullable = false)
     private String origem;
 
+    /**
+     * Campos livres, opcionais — decisão de negócio: Lançamento passa a registrar descrição
+     * (texto livre) e documento/NF (número do documento fiscal ou comprovante), sem regra de
+     * negócio associada a eles além da própria existência.
+     */
+    @Column(name = "descricao")
+    private String descricao;
+
+    @Column(name = "documento")
+    private String documento;
+
     protected LancamentoFinanceiro() {
         // exigido pelo JPA
     }
 
     public LancamentoFinanceiro(String tipo, Empresa empresa, Categoria categoria, Fornecedor fornecedor,
                                  Cliente cliente, UUID obraId, UUID veiculoId, BigDecimal valor,
-                                 LocalDate dataCompetencia, LocalDate vencimento, String origem) {
+                                 LocalDate dataCompetencia, LocalDate vencimento, String origem,
+                                 String descricao, String documento) {
         this.tipo = tipo;
         this.empresa = empresa;
         this.categoria = categoria;
@@ -104,6 +116,8 @@ public class LancamentoFinanceiro {
         this.vencimento = vencimento;
         this.situacaoAdministrativa = "Ativo";
         this.origem = origem;
+        this.descricao = descricao;
+        this.documento = documento;
     }
 
     public UUID getId() {
@@ -206,5 +220,21 @@ public class LancamentoFinanceiro {
 
     public String getOrigem() {
         return origem;
+    }
+
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
+    public String getDocumento() {
+        return documento;
+    }
+
+    public void setDocumento(String documento) {
+        this.documento = documento;
     }
 }

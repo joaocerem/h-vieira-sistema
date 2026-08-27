@@ -209,7 +209,7 @@ class ParcelaServiceTest {
         when(categoriaService.buscarPorNome("Amortização Empréstimo")).thenReturn(categoriaAmortizacao);
         LancamentoFinanceiro lancamentoCriado = new LancamentoFinanceiro("Despesa", contrato.getEmpresa(),
                 categoriaAmortizacao, contrato.getFornecedor(), null, null, null, new BigDecimal("100.00"),
-                parcela.getVencimento(), parcela.getVencimento(), "Contrato Financeiro via Parcela");
+                parcela.getVencimento(), parcela.getVencimento(), "Contrato Financeiro via Parcela", null, null);
         when(lancamentoFinanceiroService.criarGeradoPeloSistema(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(lancamentoCriado);
 
@@ -234,7 +234,7 @@ class ParcelaServiceTest {
         when(categoriaService.buscarPorNome("Consórcios")).thenReturn(categoriaConsorcios);
         LancamentoFinanceiro lancamentoCriado = new LancamentoFinanceiro("Despesa", contrato.getEmpresa(),
                 categoriaConsorcios, contrato.getFornecedor(), null, null, veiculoId, new BigDecimal("100.00"),
-                parcela.getVencimento(), parcela.getVencimento(), "Contrato Financeiro via Parcela");
+                parcela.getVencimento(), parcela.getVencimento(), "Contrato Financeiro via Parcela", null, null);
         when(lancamentoFinanceiroService.criarGeradoPeloSistema(any(), any(), any(), any(), any(),
                 any(), org.mockito.ArgumentMatchers.eq(veiculoId), any(), any(), any(), any()))
                 .thenReturn(lancamentoCriado);
@@ -257,7 +257,7 @@ class ParcelaServiceTest {
         when(categoriaService.buscarPorNome("Consórcios")).thenReturn(categoriaConsorcios);
         LancamentoFinanceiro lancamentoCriado = new LancamentoFinanceiro("Despesa", contrato.getEmpresa(),
                 categoriaConsorcios, contrato.getFornecedor(), null, null, null, new BigDecimal("100.00"),
-                parcela.getVencimento(), parcela.getVencimento(), "Contrato Financeiro via Parcela");
+                parcela.getVencimento(), parcela.getVencimento(), "Contrato Financeiro via Parcela", null, null);
         when(lancamentoFinanceiroService.criarGeradoPeloSistema(any(), any(), any(), any(), any(),
                 any(), org.mockito.ArgumentMatchers.isNull(), any(), any(), any(), any()))
                 .thenReturn(lancamentoCriado);
@@ -282,7 +282,7 @@ class ParcelaServiceTest {
         when(repository.save(any(Parcela.class))).thenAnswer(invocation -> invocation.getArgument(0));
         LancamentoFinanceiro lancamentoCriado = new LancamentoFinanceiro("Despesa", new Empresa("H Vieira"),
                 compra.getCategoria(), compra.getFornecedor(), null, null, null, new BigDecimal("100.00"),
-                compra.getData(), parcela.getVencimento(), "Cartão via Parcela");
+                compra.getData(), parcela.getVencimento(), "Cartão via Parcela", null, null);
         when(lancamentoFinanceiroService.criarGeradoPeloSistema(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(lancamentoCriado);
 
@@ -314,7 +314,7 @@ class ParcelaServiceTest {
         Parcela parcela = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("100.00"), LocalDate.of(2026, 3, 5));
         LancamentoFinanceiro lancamentoExistente = new LancamentoFinanceiro("Despesa", new Empresa("H Vieira"),
                 compra.getCategoria(), compra.getFornecedor(), null, null, null, new BigDecimal("100.00"),
-                compra.getData(), parcela.getVencimento(), "Cartão via Parcela");
+                compra.getData(), parcela.getVencimento(), "Cartão via Parcela", null, null);
         parcela.vincularLancamento(lancamentoExistente);
         UUID parcelaId = UUID.randomUUID();
         ReflectionTestUtils.setField(parcela, "id", parcelaId);

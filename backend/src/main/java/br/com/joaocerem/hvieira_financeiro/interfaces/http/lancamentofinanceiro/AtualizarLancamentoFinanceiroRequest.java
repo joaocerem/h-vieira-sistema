@@ -18,6 +18,8 @@ public record AtualizarLancamentoFinanceiroRequest(
         UUID veiculoId,
         @NotNull(message = "valor é obrigatório") BigDecimal valor,
         @NotNull(message = "dataCompetencia é obrigatória") LocalDate dataCompetencia,
-        @NotNull(message = "vencimento é obrigatório") LocalDate vencimento
+        @NotNull(message = "vencimento é obrigatório") LocalDate vencimento,
+        String descricao,
+        String documento
 ) {
 }

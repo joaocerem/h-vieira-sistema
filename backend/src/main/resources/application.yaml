@@ -21,3 +21,10 @@ hvieira:
     # T6 (docs/pendencias.md) — tolerância de dias no matching automático de conciliação. Parâmetro
     # operacional configurável, nunca uma constante fixa no código (ver ConciliacaoProperties).
     tolerancia-dias-matching: 2
+
+  cors:
+    # Origens autorizadas a consumir a API via CORS (ver CorsProperties/SecurityConfig). Valor
+    # padrão cobre o dev server local do Frontend (Vite); produção substitui via variável de
+    # ambiente/perfil quando o domínio real existir (T14, decisão #43).
+    allowed-origins:
+      - http://localhost:5173

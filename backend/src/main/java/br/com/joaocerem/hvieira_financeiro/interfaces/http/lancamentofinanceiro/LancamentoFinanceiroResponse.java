@@ -18,6 +18,8 @@ public record LancamentoFinanceiroResponse(
         LocalDate vencimento,
         String situacaoAdministrativa,
         String origem,
-        String statusFinanceiro
+        String statusFinanceiro,
+        String descricao,
+        String documento
 ) {
 }

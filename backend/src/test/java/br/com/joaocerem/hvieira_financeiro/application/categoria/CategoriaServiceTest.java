@@ -8,12 +8,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,5 +59,23 @@ class CategoriaServiceTest {
 
         assertThat(atualizada.getNome()).isEqualTo("Manutenção");
         assertThat(atualizada.getTipo()).isEqualTo("Despesa");
+    }
+
+    /**
+     * Decisão de negócio: lista de Categorias sempre em ordem alfabética, não a ordem de
+     * cadastro — {@code listarTodas} precisa usar {@code findAllByOrderByNomeAsc}, não
+     * {@code findAll} puro.
+     */
+    @Test
+    void listarTodasDeveUsarOrdenacaoAlfabetica() {
+        service = new CategoriaService(repository);
+        Categoria combustivel = new Categoria("Combustível", "Despesa");
+        Categoria manutencao = new Categoria("Manutenção", "Despesa");
+        when(repository.findAllByOrderByNomeAsc()).thenReturn(List.of(combustivel, manutencao));
+
+        List<Categoria> categorias = service.listarTodas();
+
+        assertThat(categorias).containsExactly(combustivel, manutencao);
+        verify(repository).findAllByOrderByNomeAsc();
     }
 }

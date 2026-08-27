@@ -1025,3 +1025,337 @@ Decisões técnicas resolvidas em sessões posteriores à Etapa 7, com a mesma f
       `modelagem-fisica/07-contrato-financeiro.md` atualizados.
     - **Onde está discutida**: descoberta e resposta de negócio nesta sessão (Fase 4);
       `domain-model/20-contrato-financeiro.md`, Seção 2 e Seção 4; `domain-model/05-fornecedor.md`.
+
+41. **Escopo do encerramento da Fase 4 — implementação de autenticação, autorização,
+    auditoria automática e reautenticação adiada para a Fase 5**: confirmado por resposta de
+    negócio direta que a Fase 4 (Backend) é considerada **encerrada** com o seguinte escopo
+    explícito: os 24 módulos de domínio estão implementados (Clean Architecture — `domain`,
+    `application`, `interfaces/http`, `infrastructure`), incorporando as decisões #12 a #40.
+    **Fica deliberadamente fora do escopo desta implementação, e adiada para a Fase 5
+    (etapa de segurança)**: T3 (autenticação — JWT/Argon2, decisão #14), A2 (RBAC + escopo
+    por Empresa, decisão #16), A4 (Method Security + Hibernate/JPA Filters, decisão #15), A5
+    (aspecto automático de auditoria/`LOG_AUDITORIA`, decisão #18) e A8 (barreira de
+    reautenticação para ações de IA de nível Alto, decisão #22). Essas cinco decisões
+    **permanecem congeladas exatamente como registradas** — esta entrada não as reabre, não
+    altera seu conteúdo, nem propõe mecanismo provisório algum para contorná-las. O que muda é
+    só o **momento de implementação**: passa de "dentro da Fase 4" para "explicitamente
+    dentro da Fase 5".
+    - **Estado de código no momento desta decisão**: `SecurityConfig.java` mantém todos os
+      endpoints abertos (`permitAll()`), documentado no próprio código como provisório; a
+      entidade `Usuario` não tem campos de credencial, papel ou escopo de Empresa; não existe
+      implementação de `LOG_AUDITORIA` (só `package-info.java`, sem aspecto funcional). Nenhum
+      desses pontos é uma omissão não identificada — são exatamente os pontos cobertos por
+      T3/A2/A4/A5/A8, cuja implementação esta decisão adia deliberadamente.
+    - **Alternativas analisadas**: declarar a Fase 4 encerrada sem registrar nada sobre essa
+      lacuna (deixar implícito) — descartada, contraria diretamente a regra do projeto de
+      nunca decidir nada silenciosamente (`handoff.md`, Seção 3, item 3); reabrir a Fase 4 e
+      bloquear o início da Fase 5 até auth/autorização/auditoria estarem implementadas —
+      descartada por instrução direta do usuário; encerrar a Fase 4 com o escopo explicitado
+      nesta decisão, registrando a implementação pendente como dependência formal herdada pela
+      Fase 5 — **escolhida**, por instrução direta do usuário.
+    - **Motivo da escolha**: resposta de negócio/processo direta — o encerramento da Fase 4 é
+      intencional nesses termos; nenhuma solução provisória de autenticação/autorização deve
+      ser construída só para "fechar" a fase artificialmente.
+    - **Desvantagens conhecidas e aceitas**: entre o encerramento formal da Fase 4 e a
+      implementação real de T3/A2/A4/A5/A8 na Fase 5, o backend permanece com todos os
+      endpoints publicamente acessíveis, sem autenticação nem escopo por Empresa — aceito
+      explicitamente pelo usuário como o estado esperado para este intervalo, não uma falha.
+    - **Consequência direta**: a Fase 5 (Frontend) herda, como dependência explícita e não
+      opcional, a implementação de T3/A2/A4/A5/A8 no backend — o desenho de login, rotas
+      protegidas, UI condicionada a papel/Empresa e a barreira de reautenticação da IA no
+      Frontend não podem ser finalizados sem essa implementação existir. `pendencias.md` ganha
+      nova Seção 7 (Segurança — implementação adiada da Fase 4), com um item por decisão
+      (S1-S5), todos apontando para esta entrada. `roadmap.md`, `handoff.md` e `changelog.md`
+      atualizados para refletir o encerramento da Fase 4 nestes termos.
+    - **Onde está discutida**: `pendencias.md`, Seção 7; `freeze-fase-4.md`; `roadmap.md`,
+      Fase 4; `handoff.md`, Seção 1 e Seção 14; `infrastructure/auth/SecurityConfig.java`
+      (comentário já existente no código, citado como evidência desta decisão).
+
+42. **T2 — Framework de frontend**: definido como **React + Vite + TypeScript** —
+    aplicação frontend desacoplada, consumindo exclusivamente a API REST já implementada no
+    backend (Fase 4), sem servidor Node próprio no caminho de execução.
+    - **Alternativas analisadas**: **Next.js (React)** — descartado porque é um framework
+      full-stack (SSR/SSG, rotas de API próprias, servidor Node em produção); nenhuma dessas
+      capacidades tem uso confirmado neste projeto — o sistema é um ERP interno, sem
+      necessidade de SEO nem de renderização no servidor, e já tem um backend próprio (Java/
+      Spring Boot) como única fonte de API; adotar Next.js introduziria uma segunda
+      superfície de "backend" (rotas de API do Next.js) que tensiona diretamente com a
+      fronteira já estabelecida na Fase 4 (só o backend Spring Boot expõe a API); **Vue 3** —
+      tecnicamente viável (curva de aprendizado suave, forte em telas de formulário/tabela,
+      perfil real deste sistema), mas descartado em favor de React pela escolha direta do
+      usuário; **Angular** — descartado por ser desproporcionalmente opinativo/verboso para
+      manutenção majoritariamente solo, mesmo critério de risco operacional já usado em T1
+      (decisão #12) para preferir a stack mais familiar ao mantenedor.
+    - **Motivo da escolha**: resposta direta do usuário, ancorada num critério técnico
+      objetivo — o sistema consome uma API REST já existente (Spring Boot, Fase 4), sem
+      necessidade de SSR/SEO; Vite, como bundler/dev server dedicado a SPA, é mais simples e
+      leve que um framework full-stack para esse perfil de consumo, e mantém a arquitetura do
+      frontend estritamente desacoplada do backend — nenhuma rota de API roda dentro do
+      processo do frontend, preservando a mesma fronteira de responsabilidade já estabelecida
+      entre `backend/` e `frontend/` na estrutura de pastas do projeto (`README.md`).
+    - **Desvantagens conhecidas e aceitas**: nenhuma capacidade de SSR/SSG fica disponível
+      caso uma necessidade futura de SEO ou renderização no servidor apareça — aceito
+      explicitamente, por não haver requisito confirmado (princípio 2, `principios-de-
+      modelagem.md`); se essa necessidade se materializar, é nova decisão de arquitetura, não
+      reabertura desta.
+    - **Consequência direta**: `frontend/` passa a ser um projeto Vite (React + TypeScript),
+      publicado como aplicação estática, consumindo a API REST do backend via HTTP —
+      arquitetura técnica completa do frontend (estrutura de pastas, roteamento, gerenciamento
+      de estado, comunicação com API, autenticação no cliente) a definir nas próximas decisões
+      da Fase 5, todas subordinadas a esta escolha. `pendencias.md`, item T2, movido para
+      resolvida.
+    - **Onde está discutida**: `arquitetura-tecnica.md`, Seção 5.2 e Seção 15;
+      `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas).
+
+43. **T14 — Hospedagem do Frontend**: definida como a **mesma plataforma PaaS gerenciada já
+    escolhida em nível arquitetural para o backend** (T4, decisão #38) — sem infraestrutura
+    separada para o Frontend neste momento.
+    - **Alternativas analisadas**: plataforma dedicada a estáticos (ex. Vercel, Netlify,
+      Cloudflare Pages) — tecnicamente viável para uma SPA Vite, mas descartada por
+      introduzir uma segunda plataforma de implantação a operar/gerenciar, sem necessidade
+      real demonstrada; mesma plataforma PaaS do backend (T4) — **escolhida**, por decisão
+      direta do usuário.
+    - **Motivo da escolha**: resposta direta do usuário — não separar a infraestrutura neste
+      momento. Consistente com o motivo já registrado em T4 (decisão #38): reduzir a carga
+      operacional inicial, relevante para um projeto mantido predominantemente por um único
+      desenvolvedor.
+    - **Desvantagens conhecidas e aceitas**: nenhuma otimização específica de CDN/edge para
+      ativos estáticos, que uma plataforma dedicada ofereceria nativamente — aceito
+      explicitamente, sem necessidade real demonstrada para o porte deste sistema (uso
+      interno, seis empresas do grupo, poucos usuários simultâneos); se o cenário mudar, é
+      nova decisão, não reabertura desta.
+    - **Consequência direta**: nenhuma infraestrutura nova a provisionar além da já prevista
+      em T4; a escolha do provedor específico dentro da categoria PaaS continua sendo
+      decisão operacional (T4), não afetada por esta decisão. `pendencias.md`, item T14,
+      movido para resolvida.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas);
+      `decisions.md`, decisão #38 (T4).
+
+44. **T7 — Roteamento e navegação do Frontend**: definido como **React Router**.
+    - **Alternativas analisadas**: **TanStack Router** — tecnicamente viável (tipagem de rota
+      mais estrita, integração nativa com TanStack Query), mas descartado por não haver
+      necessidade demonstrada de tipagem de rota além do que React Router já oferece, e por
+      introduzir uma peça de ecossistema menor/menos estabelecida sem ganho confirmado para
+      este projeto; **rotear sem biblioteca** — descartado por reimplementar, sem necessidade,
+      capacidades que toda SPA deste porte precisa (rotas aninhadas, guards de rota para
+      autenticação/papel); **React Router** — **escolhida**, por decisão direta do usuário.
+    - **Motivo da escolha**: resposta direta do usuário, priorizando estabilidade, tamanho de
+      comunidade, documentação e facilidade de manutenção — critério consistente com o mesmo
+      raciocínio de risco operacional já usado em T1 (decisão #12) e T2 (decisão #42) para um
+      projeto mantido predominantemente por um único desenvolvedor. É o padrão de fato do
+      ecossistema React para SPA, cobrindo as necessidades já identificadas: rotas aninhadas,
+      lazy loading de rotas por módulo, e rotas protegidas por autenticação/papel (quando T11 e
+      S1-S5 — `pendencias.md`, Seção 7 — estiverem implementadas).
+    - **Desvantagens conhecidas e aceitas**: nenhuma tipagem de rota estrita nativa (diferente
+      de TanStack Router) — aceito, sem necessidade demonstrada; se necessário no futuro, é
+      nova decisão, não reabertura desta.
+    - **Consequência direta**: `frontend/` usa React Router para toda navegação — rotas
+      aninhadas e lazy loading por módulo ficam disponíveis para a estrutura de pastas a
+      definir em T13. `pendencias.md`, item T7, movido para resolvida.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas).
+
+45. **T8 — Testes do Frontend**: definido como **Vitest + React Testing Library**, sem Jest.
+    - **Alternativas analisadas**: **Jest + React Testing Library** — descartado por exigir
+      configuração adicional para rodar sobre Vite (não é nativo), sendo redundante já ter
+      Vite como bundler e Jest como test runner separado; **E2E (Cypress/Playwright) como
+      única camada de teste** — descartado por não substituir teste de unidade/componente
+      rápido, desproporcional como única camada para este porte — deliberadamente **fora do
+      escopo desta decisão**, fica para avaliação futura quando o Frontend estiver funcional;
+      **Vitest + React Testing Library** — **escolhida**, por decisão direta do usuário.
+    - **Motivo da escolha**: resposta direta do usuário — usar a stack nativa do ecossistema
+      Vite (mesma configuração de build/teste, sem ferramenta paralela), com testes focados
+      no comportamento visível ao usuário, não em detalhe interno de implementação — princípio
+      central do React Testing Library, escolhido deliberadamente por esse motivo.
+    - **Desvantagens conhecidas e aceitas**: nenhuma cobertura de ponta a ponta (E2E) por esta
+      decisão — aceito explicitamente, avaliação de Cypress/Playwright adiada para fase
+      futura, não bloqueando a Fase 5.
+    - **Consequência direta**: `frontend/` usa Vitest como test runner e React Testing Library
+      como biblioteca de teste de componente, mesma configuração de build do Vite (T2).
+      `pendencias.md`, item T8, movido para resolvida.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas).
+
+46. **T9 — Cliente HTTP e contrato de erro do Frontend**: definido como **axios**, isolado
+    numa camada compartilhada única (`frontend/src/api/client`), responsável por toda a
+    comunicação HTTP com o backend.
+    - **Alternativas analisadas**: **fetch nativo** — descartado por não ter interceptores
+      nativos, exigindo camada própria equivalente por cima de qualquer forma para cobrir
+      injeção de token e tratamento centralizado de erro — sem vantagem real sobre axios para
+      este caso de uso; **axios** — **escolhida**, por decisão direta do usuário.
+    - **Responsabilidade da camada compartilhada (`src/api/client`)**: centraliza configuração
+      do axios (base URL, timeout), interceptores de request/response, e a tradução do
+      contrato `ApiError` já definido no backend (`timestamp`/`status`/`error`/`message`/
+      `path`/`fieldErrors`, `common/web/ApiError.java`/`GlobalExceptionHandler.java`) para um
+      formato interno consistente consumido pelo resto da aplicação. Ponto único de injeção
+      futura do token de autenticação (interceptor de request), quando T11/S1 (`pendencias.md`,
+      Seção 7) existirem. **Telas e componentes nunca tratam resposta HTTP diretamente** — só
+      consomem esta camada, mesmo princípio já usado no backend para `consultasfinanceiras`
+      (decisão #19): módulo compartilhado único, nunca reimplementado em cada consumidor.
+    - **Motivo da escolha**: resposta direta do usuário — API mais ergonômica para JSON,
+      interceptores nativos cobrindo exatamente as duas necessidades já identificadas
+      (tratamento uniforme de erro, injeção futura de token), evitando que cada tela replique
+      `try/catch` e parsing de erro por conta própria.
+    - **Desvantagens conhecidas e aceitas**: uma dependência a mais no projeto — aceita,
+      madura e estável, baixo risco de manutenção.
+    - **Consequência direta**: nenhuma tela ou componente do Frontend acessa `axios`
+      diretamente — sempre via `src/api/client`. `pendencias.md`, item T9, movido para
+      resolvida.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas);
+      `common/web/ApiError.java` (contrato de erro do backend, referenciado por esta decisão).
+
+47. **T10 — Gerenciamento de estado e cache de dados do servidor**: definido como
+    **TanStack Query** para estado de servidor (dados vindos da API) e **Context API**
+    (nativo do React) para estado de UI local — sem Redux.
+    - **Duas naturezas de estado, tratadas deliberadamente por ferramentas diferentes**:
+      estado de servidor (lançamentos, faturas, contratos, etc. — precisa de cache,
+      revalidação, deduplicação, loading/error) e estado de UI local (tema, usuário
+      autenticado, preferências — nunca vem da API). Misturar as duas na mesma ferramenta foi
+      justamente o motivo de descartar Redux para esse papel.
+    - **Alternativas analisadas para estado de servidor**: **Redux (ou Redux Toolkit) para
+      tudo** — descartado por tratar dado de servidor como estado local, reimplementando
+      manualmente cache/revalidação/deduplicação que o TanStack Query já resolve pronto, e
+      por misturar as duas naturezas de estado na mesma ferramenta; **estado "na mão"
+      (`useState`/`useEffect` por tela)** — descartado por alto risco de inconsistência e
+      requisições duplicadas, dado o volume de entidades relacionadas do domínio (Lançamento,
+      Fatura, Parcela, Conciliação); **TanStack Query** — **escolhida**, por decisão direta
+      do usuário.
+    - **Alternativas analisadas para estado de UI local**: **Zustand** — tecnicamente viável,
+      mas descartado por ora — nenhum caso real de estado de UI verdadeiramente global e
+      complexo foi identificado que o Context API não cubra; fica registrado como evolução
+      possível, não decisão antecipada (princípio 2, `principios-de-modelagem.md`); **Context
+      API** — **escolhida**, por decisão direta do usuário, restrita a estado global de
+      interface (tema, usuário autenticado, preferências).
+    - **Motivo da escolha**: resposta direta do usuário — TanStack Query resolve exatamente o
+      problema de dado de servidor deste sistema (muitas entidades relacionadas, cache e
+      revalidação consistentes), sem introduzir a complexidade do Redux sem necessidade
+      demonstrada; Context API é suficiente e nativo para o volume real de estado de UI
+      identificado hoje.
+    - **Desvantagens conhecidas e aceitas**: se um caso real de estado de UI global complexo
+      surgir no futuro, Context API pode não escalar bem — aceito explicitamente; Zustand fica
+      registrado como evolução possível nesse cenário, não uma reabertura desta decisão.
+    - **Consequência direta**: todo dado vindo da API passa por TanStack Query, consumindo
+      `src/api/client` (T9, decisão #46) como camada de requisição; estado de UI global
+      (tema, usuário autenticado, preferências) vive em Context API. Nenhum Redux é
+      introduzido no projeto. `pendencias.md`, item T10, movido para resolvida.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas);
+      `decisions.md`, decisão #46 (T9).
+
+48. **T11 — Autenticação no cliente (Frontend)**: definida como **cookie httpOnly** — o
+    Frontend nunca armazena nem acessa o token JWT diretamente; o navegador encaminha o
+    cookie automaticamente em toda requisição à API.
+    - **Alternativas analisadas**: **token em memória (variável JS)** — tecnicamente viável e
+      não exige nada novo do backend além do login devolver o JWT no corpo da resposta, mas
+      descartado porque a sessão não sobreviveria a um refresh de página (F5) sem endpoint de
+      refresh — requisito explícito do usuário; **`localStorage`/`sessionStorage`** —
+      descartados explicitamente por exporem o token a qualquer script rodando na página
+      (superfície real de risco a XSS), inconsistente com o rigor de segurança já aplicado no
+      backend (T3 — Argon2 preferencial; A8 — reautenticação para ações de IA de nível Alto);
+      **cookie httpOnly** — **escolhida**, por decisão direta do usuário.
+    - **Motivo da escolha**: elimina estruturalmente a exposição do token a JavaScript —
+      mesmo princípio de "tornar difícil violar por acidente, não só proibir por convenção"
+      já usado na escolha de A1 (Clean Architecture, decisão #13); sobrevive a refresh de
+      página sem exigir armazenamento em JS; consistente com o padrão de segurança já
+      estabelecido no restante do projeto.
+    - **Requisito imposto à implementação futura de S1/T3 no backend** (`pendencias.md`,
+      Seção 7): o endpoint de login deve emitir o token via `Set-Cookie`, com `httpOnly`,
+      `Secure` (em produção) e `SameSite` configurado adequadamente (mitigação de CSRF) — não
+      no corpo da resposta JSON. Isso **não reabre** a decisão #14 (T3 — JWT como mecanismo de
+      autenticação, Argon2 como hash) — T3 continua definindo *o que* autentica; esta decisão
+      define *como o token trafega entre backend e cliente*, uma camada de transporte
+      adicional, não uma substituição do mecanismo já congelado.
+    - **Desvantagens conhecidas e aceitas**: exige que a implementação de S1 (backend) já
+      nasça emitindo o cookie corretamente — nenhuma opção provisória de token em corpo de
+      resposta fica disponível como caminho intermediário; refresh de sessão, se necessário
+      no futuro, é responsabilidade do backend (endpoint dedicado), sem alterar esta decisão
+      do lado do cliente.
+    - **Consequência direta**: `src/api/client` (T9, decisão #46) configura `axios` com
+      `withCredentials: true`, sem interceptor de injeção manual de token (o navegador já
+      envia o cookie automaticamente) — o "ponto futuro de injeção de token" citado na
+      decisão #46 passa a ser, na prática, só a configuração de credenciais da requisição, não
+      manipulação direta do valor do token. `pendencias.md`, item S1, ganha a exigência de
+      cookie httpOnly como parte de sua implementação; item T11 movido para resolvida.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia), Seção 7 (S1) e Seção 8
+      (resolvidas); `decisions.md`, decisão #14 (T3) e decisão #46 (T9).
+
+49. **T12 — UI e estilo (biblioteca de componentes/design system)**: definido como
+    **Tailwind CSS + shadcn/ui**. **A escolha de uma biblioteca de DataGrid fica
+    deliberadamente fora do escopo desta decisão** — enquanto uma tabela HTML com Tailwind
+    atender ao requisito, ela é usada; necessidade real de recursos avançados (virtualização,
+    agrupamento, edição em massa, filtros complexos, seleção múltipla) origina uma nova
+    decisão técnica específica, sem alterar esta.
+    - **Alternativas analisadas**: **MUI (Material UI)** — tecnicamente forte (componentes
+      prontos, incluindo `DataGrid`), mas descartado por ser biblioteca fechada, com estética
+      "Material" marcada exigindo customização, e menor controle fino por componente; **Ant
+      Design** — tecnicamente adequado ao perfil admin/ERP do sistema, mas descartado pelo
+      mesmo motivo (biblioteca fechada, estética própria a sobrescrever, bundle maior);
+      **Chakra UI** — descartado por ecossistema menor de componentes prontos para o volume
+      de telas densas deste sistema; **Tailwind CSS + shadcn/ui** — **escolhida**, por decisão
+      direta do usuário.
+    - **Motivo da escolha**: resposta direta do usuário — priorizar controle do código-fonte
+      dos componentes (shadcn/ui é incorporado ao projeto, não instalado como dependência
+      fechada), facilidade de customização e independência de biblioteca de terceiros. Tailwind
+      como padrão único de estilização de toda a aplicação. Consistente com o mesmo critério
+      já usado em T7 (decisão #44, React Router) e T9 (decisão #46, axios): preferir a opção
+      mais direta/controlável ao invés da mais "pronta", quando não há necessidade
+      demonstrada que justifique a segunda.
+    - **DataGrid — decisão adiada, não uma lacuna esquecida**: por instrução explícita do
+      usuário, nenhuma biblioteca de grid financeiro (ex. TanStack Table, AG Grid) é escolhida
+      agora — mesmo princípio já aplicado repetidamente no domínio (princípio 2, `principios-
+      de-modelagem.md`: não estruturar antecipadamente um conceito sem necessidade real
+      confirmada). Tabela HTML simples, estilizada com Tailwind, é o padrão até que essa
+      necessidade apareça concretamente.
+    - **Desvantagens conhecidas e aceitas**: componentes mais complexos (ex. um data grid
+      financeiro completo) exigem montagem manual, sem vir prontos de uma biblioteca fechada
+      — aceito explicitamente; mais decisão de composição de UI recai sobre quem constrói
+      cada tela, mitigado pelo próprio modelo shadcn/ui (componentes copiados, ajustáveis
+      livremente, sem API fechada a contornar).
+    - **Consequência direta**: `frontend/` usa Tailwind CSS como única forma de estilização e
+      shadcn/ui como fonte de componentes base, incorporados ao código-fonte do projeto
+      conforme a necessidade de cada tela (tabelas financeiras, formulários densos,
+      dashboards, telas administrativas). `pendencias.md`, item T12, movido para resolvida;
+      nenhuma pendência de DataGrid criada — registrada só como nota de escopo nesta decisão,
+      não como item formal de `pendencias.md`, para não antecipar estrutura sem necessidade
+      confirmada.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas).
+
+50. **T13 — Estrutura de pastas e padrão arquitetural do Frontend**: definida como
+    organização **por feature/módulo de domínio** (`features/`), espelhando os módulos já
+    definidos no backend (`arquitetura-tecnica.md`, Seção 2) — sem Clean Architecture
+    completa e sem organização por camada técnica global.
+    - **Alternativas analisadas**: **por camada técnica** (`components/`, `hooks/`, `pages/`,
+      `services/` na raiz, tudo junto) — descartada por não escalar com o número de módulos
+      do domínio (24 entidades) e por espalhar arquivos de um mesmo módulo de negócio em
+      pastas diferentes, sem fronteira entre módulos; **Clean Architecture completa**
+      (domain/application/infrastructure espelhando o backend) — descartada por
+      desproporção: o "domínio" real (regra de negócio) já vive inteiramente no backend
+      (Fase 4); o Frontend não tem invariante própria a proteger, mesmo critério de
+      proporcionalidade já usado no próprio backend para reservar Clean Architecture completa
+      só a módulos com "núcleo com invariante" (`arquitetura-tecnica.md`, Seção 4); **por
+      feature/módulo de domínio** — **escolhida**, por decisão direta do usuário.
+    - **Estrutura definida** (`frontend/src/`):
+      - `app/` — bootstrap da aplicação: providers (TanStack Query, Context API, Router),
+        configurações globais.
+      - `features/` — um diretório por módulo de negócio, espelhando os módulos do backend
+        (`arquitetura-tecnica.md`, Seção 2: Cadastros Base, Financeiro, Conciliação Bancária,
+        Cartão de Crédito, Financiamentos e Consórcios, Obras, Frota, Ajuste Financeiro,
+        Balanço, IA). Cada feature pode conter `components/`, `hooks/`, `api/`, `pages/`,
+        `types/` e demais arquivos próprios daquele módulo.
+      - `shared/` — só recursos genuinamente compartilhados entre features: componentes
+        shadcn/ui reaproveitados (T12), `api/client` (T9, decisão #46), Context API (T10,
+        decisão #47), hooks genéricos, constantes, tipos comuns.
+      - `routes/` — só definição de rotas React Router (T7, decisão #44) e guards de
+        autenticação (T11, decisão #48) — navegação mantida separada das features.
+    - **Motivo da escolha**: resposta direta do usuário — mesma linguagem de negócio entre
+      backend e Frontend (navegação mais fácil entre as duas bases de código), sem reproduzir
+      rigidez desproporcional ao papel real do Frontend (apresentação, orquestração de
+      chamadas de API, experiência do usuário — nunca regra de negócio).
+    - **Desvantagens conhecidas e aceitas**: nenhuma identificada — a estrutura foi desenhada
+      para o perfil já confirmado do sistema (muitos módulos de domínio, regra de negócio
+      concentrada no backend).
+    - **Consequência direta**: com T13 resolvida, todas as decisões constituintes da Fase 5
+      necessárias antes da arquitetura técnica completa do Frontend estão fechadas (T2, T7,
+      T8, T9, T10, T11, T12, T13, T14 — decisões #42 e #44-#50). A arquitetura técnica
+      completa do Frontend (Seção 7 do processo desta fase) pode ser elaborada agora,
+      sintetizando estas nove decisões. Se uma necessidade concreta futura exigir outra
+      organização, é nova decisão técnica, não reabertura desta.
+    - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas);
+      `arquitetura-tecnica.md`, Seção 2 (módulos do backend, referência de espelhamento).

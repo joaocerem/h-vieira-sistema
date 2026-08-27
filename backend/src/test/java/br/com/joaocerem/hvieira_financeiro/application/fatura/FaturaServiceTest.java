@@ -110,7 +110,7 @@ class FaturaServiceTest {
         CompraCartao compra = compra();
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", cartao.getContaBancaria().getEmpresa(),
                 compra.getCategoria(), compra.getFornecedor(), null, null, null, new BigDecimal("5000.00"),
-                LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 5), "Cartão via Parcela");
+                LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 5), "Cartão via Parcela", null, null);
         Parcela parcelaComLancamento = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("5000.00"), LocalDate.of(2026, 3, 5));
         parcelaComLancamento.vincularLancamento(lancamento);
         Parcela parcelaSemLancamento = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("12000.00"), LocalDate.of(2026, 3, 5));

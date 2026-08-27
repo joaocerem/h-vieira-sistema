@@ -30,11 +30,13 @@ Toda a documentação do projeto está na pasta `docs`.
 Documentos atuais:
 
 - Arquitetura Conceitual
-- Arquitetura Técnica
+- Arquitetura Técnica (Backend)
+- Arquitetura Técnica (Frontend)
 - Project Rules
 - Roadmap
 - Changelog
 - Decisions
+- Pendências
 
 ---
 
@@ -42,9 +44,9 @@ Documentos atuais:
 
 🚧 Em desenvolvimento.
 
-Neste momento o projeto encontra-se na fase de definição da arquitetura e planejamento técnico.
+Backend (Fase 4) implementado e encerrado — ver `docs/freeze-fase-4.md`. Autenticação, autorização, escopo por Empresa e auditoria automática foram deliberadamente adiadas para a Fase 5 (ver `docs/pendencias.md`, Seção 7).
 
-Nenhuma implementação foi iniciada.
+Frontend (Fase 5): arquitetura técnica completa — ver `docs/architecture/arquitetura-tecnica-frontend.md`. Implementação de código ainda não iniciada.
 
 ---
 

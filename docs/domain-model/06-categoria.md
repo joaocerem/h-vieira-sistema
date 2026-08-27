@@ -46,6 +46,7 @@
 - **Regras de negócio**:
   - Regra 29 do conceitual: a IA nunca funde `categoria` e `classificação` numa única suposição — se ambas as mudanças forem necessárias, são duas sugestões distintas (podem ser agrupadas só visualmente via `grupo_sugestão_id` de `SUGESTÃO_IA`).
   - Não há detalhamento de subtipos dentro de Categoria (diferente de `classificação`, cuja regra 4 do conceitual explicitamente nega subtipos de "fora da operação") — decisão definitiva, não apenas ausência temporária (ver Seção 7).
+  - **Ordem de listagem** (decisão de negócio, rodada de evolução operacional 2026-08): a listagem de Categorias é sempre em ordem alfabética por `nome`, não a ordem de cadastro — implementada na consulta (`CategoriaRepository#findAllByOrderByNomeAsc`), não persistida como campo novo.
 
 ---
 

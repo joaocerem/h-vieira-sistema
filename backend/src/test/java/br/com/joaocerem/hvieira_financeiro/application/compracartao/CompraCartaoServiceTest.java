@@ -131,7 +131,7 @@ class CompraCartaoServiceTest {
 
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", cartao.getContaBancaria().getEmpresa(),
                 categoriaAntiga, fornecedor, null, null, null, new BigDecimal("100.00"), LocalDate.of(2026, 3, 10),
-                LocalDate.of(2026, 3, 5), "Cartão via Parcela");
+                LocalDate.of(2026, 3, 5), "Cartão via Parcela", null, null);
         UUID lancamentoId = UUID.randomUUID();
         ReflectionTestUtils.setField(lancamento, "id", lancamentoId);
         Parcela parcela = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("100.00"), LocalDate.of(2026, 3, 5));
@@ -146,7 +146,7 @@ class CompraCartaoServiceTest {
 
         service.atualizar(id, fornecedorId, LocalDate.of(2026, 3, 10), categoriaId, "Terraplanagem", null, null);
 
-        verify(lancamentoFinanceiroService).atualizar(eq(lancamentoId), any(), eq(categoriaId), any(), any(), any(), any(), any(), any(), any());
+        verify(lancamentoFinanceiroService).atualizar(eq(lancamentoId), any(), eq(categoriaId), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -164,7 +164,7 @@ class CompraCartaoServiceTest {
 
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", cartao.getContaBancaria().getEmpresa(),
                 categoriaAntiga, fornecedor, null, null, null, new BigDecimal("100.00"), LocalDate.of(2026, 3, 10),
-                LocalDate.of(2026, 3, 5), "Cartão via Parcela");
+                LocalDate.of(2026, 3, 5), "Cartão via Parcela", null, null);
         UUID lancamentoId = UUID.randomUUID();
         ReflectionTestUtils.setField(lancamento, "id", lancamentoId);
         Parcela parcela = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("100.00"), LocalDate.of(2026, 3, 5));
@@ -179,6 +179,6 @@ class CompraCartaoServiceTest {
 
         service.atualizar(id, fornecedorId, LocalDate.of(2026, 3, 10), categoriaId, "Terraplanagem", null, null);
 
-        verify(lancamentoFinanceiroService, never()).atualizar(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(lancamentoFinanceiroService, never()).atualizar(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 }

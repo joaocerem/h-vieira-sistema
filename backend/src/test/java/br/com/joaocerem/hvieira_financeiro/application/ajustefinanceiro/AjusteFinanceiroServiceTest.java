@@ -48,7 +48,7 @@ class AjusteFinanceiroServiceTest {
     private LancamentoFinanceiro lancamentoComId(UUID id) {
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", new Empresa("H Vieira"),
                 new Categoria("Combustível", "Despesa"), new Fornecedor("Posto Ipiranga"), null, null, null,
-                new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         ReflectionTestUtils.setField(lancamento, "id", id);
         return lancamento;
     }

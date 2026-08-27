@@ -22,7 +22,9 @@ public final class LancamentoFinanceiroMapper {
                 lancamento.getVencimento(),
                 lancamento.getSituacaoAdministrativa(),
                 lancamento.getOrigem(),
-                statusFinanceiro
+                statusFinanceiro,
+                lancamento.getDescricao(),
+                lancamento.getDocumento()
         );
     }
 }

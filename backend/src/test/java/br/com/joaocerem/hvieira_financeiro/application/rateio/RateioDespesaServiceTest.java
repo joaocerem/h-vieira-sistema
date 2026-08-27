@@ -50,7 +50,7 @@ class RateioDespesaServiceTest {
     private LancamentoFinanceiro lancamentoComId(UUID id, BigDecimal valor, UUID obraId) {
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", new Empresa("H Vieira"),
                 new Categoria("Combustível", "Despesa"), new Fornecedor("Posto Ipiranga"), null, obraId, null,
-                valor, LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                valor, LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         ReflectionTestUtils.setField(lancamento, "id", id);
         return lancamento;
     }

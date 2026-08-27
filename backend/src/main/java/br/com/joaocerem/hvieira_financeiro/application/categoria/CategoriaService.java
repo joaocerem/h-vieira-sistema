@@ -40,9 +40,13 @@ public class CategoriaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada: " + id));
     }
 
+    /**
+     * Ordem alfabética (decisão de negócio) — não a ordem de cadastro (`findAll()` puro, como
+     * antes). `CategoriaRepository#findAllByOrderByNomeAsc`.
+     */
     @Transactional(readOnly = true)
     public List<Categoria> listarTodas() {
-        return repository.findAll();
+        return repository.findAllByOrderByNomeAsc();
     }
 
     /**

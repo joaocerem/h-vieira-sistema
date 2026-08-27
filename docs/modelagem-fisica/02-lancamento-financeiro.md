@@ -22,6 +22,8 @@ Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arqui
 | `vencimento` | Data | Sim | — |
 | `situacao_administrativa` | Enumerado — fechado (Ativo / Cancelado) | Sim | Default `Ativo` |
 | `origem` | Enumerado — fechado (Manual / Cartão via Parcela / Contrato Financeiro via Parcela / Ação de IA Confirmada) | Sim | Imutável após criação |
+| `descricao` | Texto livre (`TEXT`) | Não | Adicionada em `V16` (rodada de evolução operacional 2026-08) — sem `CHECK`/regra associada além da própria existência |
+| `documento` | Texto livre (`TEXT`) | Não | Adicionada em `V16` (rodada de evolução operacional 2026-08) — número do documento fiscal/comprovante, sem `CHECK`/regra associada além da própria existência |
 
 **`status_financeiro` não é coluna desta tabela.** É valor sempre calculado a partir da soma de `APLICAÇÃO_DE_LIQUIDAÇÃO.valor_aplicado` (Decisão 1; princípio 6) — obtido por consulta/view (`vw_status_financeiro_lancamentos`, a projetar quando `APLICAÇÃO_DE_LIQUIDAÇÃO` for modelada), nunca persistido nesta tabela nem em nenhuma outra.
 

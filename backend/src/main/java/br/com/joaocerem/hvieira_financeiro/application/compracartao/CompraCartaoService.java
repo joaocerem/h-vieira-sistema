@@ -131,6 +131,9 @@ public class CompraCartaoService {
             if (rateioDespesaService.existeRateioParaLancamento(lancamento.getId())) {
                 continue;
             }
+            // `descricao`/`documento` só são reenviados como já estavam — esta propagação (D5)
+            // atualiza categoria/obra/veículo a partir da Compra Cartão, não os campos livres do
+            // Lançamento.
             lancamentoFinanceiroService.atualizar(
                     lancamento.getId(),
                     lancamento.getEmpresa().getId(),
@@ -141,7 +144,9 @@ public class CompraCartaoService {
                     compra.getVeiculo() != null ? compra.getVeiculo().getId() : null,
                     lancamento.getValor(),
                     lancamento.getDataCompetencia(),
-                    lancamento.getVencimento());
+                    lancamento.getVencimento(),
+                    lancamento.getDescricao(),
+                    lancamento.getDocumento());
         }
     }
 

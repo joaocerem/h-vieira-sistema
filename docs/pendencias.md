@@ -17,7 +17,8 @@
 4. Banco de Dados
 5. Tecnologia
 6. Melhorias Futuras
-7. Pendências já resolvidas (índice, não repetidas em detalhe)
+7. Segurança — implementação adiada da Fase 4
+8. Pendências já resolvidas (índice, não repetidas em detalhe)
 
 ---
 
@@ -86,12 +87,6 @@
 
 ## 5. TECNOLOGIA
 
-**T2 — Framework de frontend**
-- Origem: `arquitetura-tecnica.md`, decisão #3
-- Motivo em aberto: React (Next.js) / Vue 3 / Angular — ainda não escolhido
-- Fase de resolução: Fase 5 — Frontend
-- Bloqueia etapa futura? Sim, para o início da Fase 5
-
 **T5 — Momento e provedor de integração bancária futura (Open Finance)**
 - Origem: `arquitetura-tecnica.md`, decisão #11
 - Motivo em aberto: upload manual já cobre a necessidade hoje; agregador Open Finance / API direta do banco são opções futuras
@@ -154,7 +149,49 @@
 
 ---
 
-## 7. PENDÊNCIAS JÁ RESOLVIDAS (ÍNDICE, NÃO REPETIDAS EM DETALHE)
+## 7. SEGURANÇA — IMPLEMENTAÇÃO ADIADA DA FASE 4
+
+**Natureza desta categoria**: diferente das demais, estes cinco itens não são decisões em
+aberto — as decisões correspondentes já estão congeladas (`decisions.md`, decisões #14, #15,
+#16, #18, #22). O que está pendente é exclusivamente a **implementação em código**, adiada
+deliberadamente da Fase 4 para a Fase 5, por decisão registrada em `decisions.md`, decisão
+#41. Nenhum destes itens deve ser tratado como pendência de decisão — reabrir a decisão
+correspondente exigiria uma nova decisão explícita, não a resolução destes itens.
+
+**S1 — Implementação de T3 (autenticação)**
+- Decisão já congelada: Spring Security + JWT, hash Argon2 (decisão #14)
+- Estado atual: nenhum mecanismo de login/emissão de token existe; `Usuario` não tem campo de senha/hash
+- **Requisito adicional, imposto por T11 (decisão #48)**: o endpoint de login deve emitir o token via `Set-Cookie`, `httpOnly`, `Secure` (produção) e `SameSite` configurado — nunca no corpo da resposta JSON; o Frontend nunca acessa o valor do token diretamente
+- Fase de resolução: Fase 5 (etapa de segurança), antes de qualquer tela de login no Frontend
+- Bloqueia etapa futura? Sim — bloqueia o desenho final de autenticação do Frontend
+
+**S2 — Implementação de A2 (RBAC + escopo por Empresa)**
+- Decisão já congelada: papel fixo + escopo sobre uma ou mais Empresas (decisão #16)
+- Estado atual: `Usuario` não tem campo de papel nem de Empresas associadas
+- Fase de resolução: Fase 5 (etapa de segurança)
+- Bloqueia etapa futura? Sim — bloqueia UI condicionada a papel/Empresa no Frontend
+
+**S3 — Implementação de A4 (dois pontos de checagem de permissão)**
+- Decisão já congelada: Spring Security Method Security + Hibernate/JPA Filters (decisão #15)
+- Estado atual: `SecurityConfig.java` libera todos os endpoints (`permitAll()`), sem nenhum dos dois mecanismos
+- Fase de resolução: Fase 5 (etapa de segurança)
+- Bloqueia etapa futura? Sim — bloqueia rotas protegidas e escopo por Empresa no Frontend
+
+**S4 — Implementação de A5 (aspecto automático de auditoria)**
+- Decisão já congelada: aspecto Spring AOP (`@Around`) gravando em `LOG_AUDITORIA` (decisão #18)
+- Estado atual: `domain/auditoria` contém só `package-info.java`; nenhuma entidade ou aspecto implementado; bloqueado até existir identidade real de usuário autenticado (depende de S1)
+- Fase de resolução: Fase 5 (etapa de segurança), após S1
+- Bloqueia etapa futura? Não bloqueia o Frontend diretamente, mas nenhuma tela de auditoria pode ser construída antes desta implementação
+
+**S5 — Implementação de A8 (barreira de reautenticação para IA de nível Alto)**
+- Decisão já congelada: reautenticação por senha (decisão #22)
+- Estado atual: não implementado — depende de S1 (senha/hash) existir primeiro
+- Fase de resolução: Fase 5 (etapa de segurança) ou Fase 6 (IA), o que vier primeiro a exigir a tela de confirmação de Ação de IA
+- Bloqueia etapa futura? Não bloqueia o início da Fase 5, só a tela específica de confirmação de Ação de IA de nível Alto
+
+---
+
+## 8. PENDÊNCIAS JÁ RESOLVIDAS (ÍNDICE, NÃO REPETIDAS EM DETALHE)
 
 Resolvidas durante a etapa de consolidação (Pendências 1 a 11) — ver `plano-final-consolidacao.md`, Seção 1, e os documentos de entidade correspondentes para o detalhe de cada decisão:
 
@@ -261,3 +298,77 @@ Resolvida na Fase 4, em nível arquitetural (congelamento de T4):
 
 Satisfeita documentalmente, sem decisão nova (M1):
 - **M1 — Vocabulário arquitetural duplo (Clean Architecture + Porta/Adaptador)**: já respondida por completo pela decisão #13 (A1), que declara Clean Architecture e Hexagonal/Ports & Adapters como **a mesma alternativa arquitetural**, não vocabulários concorrentes com fronteira própria — "Ports & Adapters" é só ênfase nos pontos que o domínio já trata como fronteira controlada (ferramentas de consulta da IA, importação de extrato bancário, futuro provedor de IA/Open Finance). Nenhuma decisão nova criada — nota documental cruzando para `decisions.md`, decisão #13, inserida em `arquitetura-tecnica.md`.
+
+Resolvida no início da Fase 5, por decisão direta do usuário (congelamento de T2):
+- **T2 — Framework de frontend**: **React + Vite + TypeScript** definidos como stack oficial do frontend — aplicação desacoplada, consumindo exclusivamente a API REST do backend, sem SSR/SSG e sem framework full-stack (Next.js e Remix descartados por esse motivo). Decisão congelada em `decisions.md`, decisão #42; `arquitetura-tecnica.md` (Seção 5.2 e Seção 15) atualizada.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T14):
+- **T14 — Hospedagem do Frontend**: o Frontend será hospedado na **mesma plataforma PaaS gerenciada já escolhida em nível arquitetural para o backend** (T4, decisão #38) — sem infraestrutura separada neste momento. Plataforma dedicada a estáticos (Vercel/Netlify/Cloudflare Pages) descartada por não haver necessidade real de otimização de CDN/edge para o porte deste sistema. Decisão congelada em `decisions.md`, decisão #43.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T7):
+- **T7 — Roteamento e navegação do Frontend**: **React Router** definido — padrão de fato do ecossistema React para SPA, cobrindo rotas aninhadas, lazy loading por módulo e rotas protegidas por autenticação/papel. TanStack Router descartado por não haver necessidade demonstrada de tipagem de rota estrita além do que React Router oferece. Decisão congelada em `decisions.md`, decisão #44.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T8):
+- **T8 — Testes do Frontend**: **Vitest + React Testing Library** definidos, sem Jest — stack nativa do ecossistema Vite, testes focados no comportamento visível ao usuário. Testes E2E (Cypress/Playwright) deliberadamente fora do escopo, avaliação adiada para fase futura. Decisão congelada em `decisions.md`, decisão #45.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T9):
+- **T9 — Cliente HTTP e contrato de erro do Frontend**: **axios**, isolado numa camada compartilhada única (`src/api/client`) — centraliza configuração, interceptores, tratamento uniforme do contrato `ApiError` do backend e, futuramente, injeção do token de autenticação (T11/S1). Telas e componentes nunca tratam resposta HTTP diretamente. Decisão congelada em `decisions.md`, decisão #46.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T10):
+- **T10 — Gerenciamento de estado e cache de dados do servidor**: **TanStack Query** para estado de servidor + **Context API** para estado de UI local (tema, usuário autenticado, preferências) — sem Redux, por não haver necessidade demonstrada além do que TanStack Query já cobre para dado de API. Zustand registrado como evolução possível, não decisão antecipada, se um caso real de estado de UI global complexo surgir. Decisão congelada em `decisions.md`, decisão #47.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T11):
+- **T11 — Autenticação no cliente (Frontend)**: **cookie httpOnly** — o Frontend nunca armazena nem acessa o token JWT diretamente; `localStorage`/`sessionStorage` e token em memória descartados. Impõe requisito à implementação futura de S1 (backend): login deve emitir o token via `Set-Cookie`, `httpOnly`, `Secure` (produção) e `SameSite` configurado. Não reabre T3 (decisão #14) — define só o transporte do token, não o mecanismo de autenticação. Decisão congelada em `decisions.md`, decisão #48.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T12):
+- **T12 — UI e estilo (biblioteca de componentes/design system)**: **Tailwind CSS + shadcn/ui** — componentes copiados para o código-fonte do projeto, não dependência fechada; MUI, Ant Design e Chakra UI descartados. Biblioteca de DataGrid deliberadamente fora do escopo — tabela HTML com Tailwind é o padrão até necessidade real e concreta de recursos avançados originar decisão técnica específica. Decisão congelada em `decisions.md`, decisão #49.
+
+Resolvida na Fase 5, por decisão direta do usuário (congelamento de T13):
+- **T13 — Estrutura de pastas e padrão arquitetural do Frontend**: organização **por feature/módulo de domínio** (`features/`), espelhando os módulos do backend — `app/` (bootstrap), `features/` (um diretório por módulo de negócio), `shared/` (só o genuinamente compartilhado) e `routes/` (React Router + guards). Sem Clean Architecture completa (regra de negócio permanece no backend) nem organização por camada técnica global. Decisão congelada em `decisions.md`, decisão #50.
+
+**Marco**: com T13 resolvida, todas as nove decisões constituintes do Frontend levantadas nesta auditoria da Fase 5 (T2, T7, T8, T9, T10, T11, T12, T13, T14 — `decisions.md`, decisões #42 e #44-#50) estão fechadas. A arquitetura técnica completa do Frontend pode ser elaborada.
+
+---
+
+## 9. RODADA DE EVOLUÇÃO OPERACIONAL (2026-08) — DECISÕES APROVADAS, IMPLEMENTAÇÃO EM ANDAMENTO
+
+Com todas as features de negócio da Fase 5 implementadas (Seção 8), o usuário trouxe feedback de uso operacional real da empresa e uma nova rodada de decisões de negócio. **Estas decisões substituem a modelagem anterior sempre que houver conflito** — não são adições incrementais, são correções de regra de negócio baseadas no processo real da empresa. Analisadas, discutidas (várias rodadas de refinamento, registradas na sessão) e formalmente aprovadas pelo usuário antes de qualquer implementação. Implementação em 8 fases, cada uma só avança mediante confirmação explícita do usuário.
+
+**As 14 decisões de negócio aprovadas** (numeração informal, só para referência nesta seção):
+1. Fornecedor/Categoria em Lançamento ganham autocomplete com cadastro rápido embutido (sem sair da tela).
+2. Conta Bancária e Cartão de Crédito perdem o campo `apelido` — identificados por Empresa + Banco (Conta) / Empresa + Cartão-Banco (Cartão).
+3. Máscara de moeda padronizada em todo campo de valor monetário em Real do sistema.
+4. Obra ganha data real de término (via transição de status já existente, sem endpoint novo).
+5. Veículo: `obraAtual` mantido intocado no backend, removido só da interface de cadastro (sem migração destrutiva).
+6. Lançamento Financeiro ganha `descricao` (texto livre) e `documento` (número de NF/comprovante).
+7. **Liquidação Financeira removida por completo** — sem substituto equivalente; Vínculo Conciliação passa a referenciar Lançamento Financeiro diretamente (N:N).
+8. **Ajuste Financeiro removido por completo** — sem substituto equivalente; divergência automática só é acionada por mudança de `valor` ou `tipo` (natureza) do Lançamento.
+9. Conciliação Bancária passa a ser baseada em importação de arquivo OFX real do banco (não mais só lançamento manual de item de extrato).
+10. **Filosofia da Conciliação, decisão final e mais radical desta rodada**: não existe nenhum estado intermediário "Pago" — nenhum botão "marcar como pago", nenhum status "Pago", nenhuma ação equivalente. A confirmação de pagamento/recebimento acontece exclusivamente através da conciliação bancária (Vínculo Conciliação confirmado). Contas a Pagar/Receber deixam de ser uma entidade/status persistido e passam a ser uma **consulta derivada**: lançamentos ativos (não cancelados) e ainda não conciliados — preservando a lógica de cancelamento já existente. Nenhum novo estado visível ao usuário (ex. "Aberto") — a interface mostra só conciliado/não-conciliado; tudo o mais é derivado internamente, nunca persistido.
+11. Nova entidade **Medição de Obra** — gera em cascata: receita da medição + lançamentos de faturamento direto + lançamentos de impostos, cada item com fornecedor/categoria/descrição/valor/obra/veículo próprios.
+12. **Faturamento Direto não é entidade nem módulo novo** — é incorporado ao fluxo já existente de Lançamento Financeiro (um Lançamento comum que não gera Movimentação Bancária); mecanismo exato de interface definido durante a implementação da Fase 6.
+13. Regra 21 (Receitas de Obra) não é revogada, só especializada pelo novo mecanismo de Medição.
+14. Redesenho do Balanço — deliberadamente **deferido**, sem decisão de escopo nesta rodada.
+
+**Ordem de implementação — original (8 fases pequenas, técnica) — SUBSTITUÍDA, ver abaixo**:
+1. Máscara de moeda universal + Categoria ordenação alfabética + Lançamento (descrição + documento/NF) — **[x] concluída** (ver `changelog.md`, entrada 2026-08-25)
+2. ~~Componente de autocomplete + cadastro rápido, aplicado a Fornecedor/Categoria em Lançamento~~
+3. ~~Conta Bancária/Cartão sem apelido; Obra (data real término); Veículo (remoção só da interface)~~
+4. ~~Remoção de Liquidação Financeira~~
+5. ~~Remoção de Ajuste Financeiro~~
+6. ~~Faturamento Direto~~
+7. ~~Medição de Obra~~
+8. ~~Conciliação via OFX~~
+
+**Mudança de estratégia (decisão explícita do usuário, após a Fase 1 e o primeiro teste prático)**: a divisão em 8 fases pequenas e tecnicamente isoladas dificultava validar a experiência real de uso — funcionalidades do mesmo processo operacional ficavam espalhadas por fases diferentes. A partir da Fase 1, a divisão passa a ser por **fluxo operacional completo da empresa**, nunca por semelhança técnica de código — cada entrega ("Sprint", não mais "Fase") deve deixar um processo inteiro utilizável do início ao fim, mesmo que isso reduza reaproveitamento técnico. Princípios obrigatórios definidos pelo usuário: cada sprint entrega um fluxo operacional completo; evitar dependências entre sprints; nunca implementar metade de uma funcionalidade numa sprint e a outra metade na seguinte — se uma funcionalidade só faz sentido quando outra existir, pertencem à mesma sprint, mesmo com menos reaproveitamento técnico; o sistema fica sempre utilizável ao final de cada sprint.
+
+**Ordem de implementação aprovada — atual (por fluxo operacional)**, ver `roadmap.md` para o status corrente de cada uma:
+1. Máscara de moeda universal + Categoria ordenação alfabética + Lançamento (descrição + documento/NF) — **[x] concluída**
+2. **Sprint 2 — Fluxo completo de Lançamentos** (autocomplete + cadastro rápido de Fornecedor/Categoria; Cliente permanece select tradicional) — **[x] concluída** (ver `changelog.md`, entrada 2026-08-25 "Sprint 2")
+3. **Sprint 3 — Fluxo Financeiro**: remoção de Liquidação Financeira e Ajuste Financeiro; nova filosofia de Contas a Pagar/Receber (filtros da listagem existente, sem tela nova); Conta Bancária/Cartão sem apelido (movido para cá — mesmo fluxo operacional de gestão financeira, não o de cadastro de Lançamento). Conciliação continua manual, sem OFX
+4. **Sprint 4 — Obras**: Obra como centro operacional (a própria tela evolui — sem tela nova); Medição de Obra (entidade nova) com o mecanismo de Faturamento Direto embutido nela (nunca antecipado/exposto isoladamente — só existe como consequência de uma Medição); impostos; saldo contratual. Obra (data real término) e Veículo (`obraAtual` fora da interface) também entram aqui, por proximidade operacional
+5. **Sprint 5 — Conciliação Final**: OFX, parser, conciliação automática, Balanço novo — **bloqueada** até haver uma amostra real de arquivo `.ofx` de um banco real usado pela empresa
+
+**Regra definitiva sobre Faturamento Direto e Contas a Pagar/Receber** (esclarecida após a Sprint 2, antes do início da Sprint 4 — registrada aqui porque afeta o desenho da Sprint 3 também): itens de Faturamento Direto (custos pagos diretamente por um terceiro — ex. cooperativa — nunca pela conta bancária da empresa) **nunca aparecem em Contas a Pagar nem em Contas a Receber**, e **nunca são conciliados individualmente** — participam normalmente de custo da obra, relatórios, balanço, custo de veículo e categoria, mas ficam inteiramente fora do fluxo bancário. Só o **valor líquido esperado da Medição** (bruto menos Faturamento Direto menos impostos) entra em Contas a Receber e é conciliado. Impostos, ao contrário de Faturamento Direto, são despesa real da empresa — entram normalmente em Contas a Pagar, geram Movimentação Bancária e são conciliados como qualquer outra despesa.
+
+**Consequência sobre `decisions.md`/`domain-model/`**: as decisões #7-#10 e #11-#13 acima **superam** decisões e modelagem já registradas nesses documentos (Liquidação Financeira, Aplicação de Liquidação, Ajuste Financeiro, Vínculo Conciliação, D1/D2/D13/D34, entre outras). Por princípio do projeto (nada é apagado — Seção 3, `handoff.md`), essa supersessão só é formalizada em `decisions.md` e nos documentos de domínio **quando cada sprint correspondente for de fato implementada**, não antecipadamente — evita documentar uma arquitetura-alvo que ainda pode ser refinada durante a implementação, como já aconteceu com a Sprint 3 desta rodada (o mecanismo de substituição de Liquidação foi revisado três vezes antes da aprovação final).

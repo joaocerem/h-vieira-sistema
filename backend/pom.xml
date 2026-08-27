@@ -78,6 +78,16 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- No Spring Boot 4, `@AutoConfigureMockMvc` também foi extraída para um módulo próprio
+		     (`org.springframework.boot.webmvc.test.autoconfigure`, artefato `spring-boot-starter-webmvc-test`)
+		     — `spring-boot-starter-test` sozinho não traz mais MockMvc (mesma classe de gotcha já
+		     registrada acima para o Flyway). Necessária para testar a cadeia de CORS/Security via
+		     `MockMvc` sem precisar subir um Tomcat real. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

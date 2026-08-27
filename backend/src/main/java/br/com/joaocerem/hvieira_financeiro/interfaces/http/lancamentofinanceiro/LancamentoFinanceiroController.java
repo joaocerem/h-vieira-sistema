@@ -24,7 +24,8 @@ public class LancamentoFinanceiroController {
     public ResponseEntity<LancamentoFinanceiroResponse> criar(@Valid @RequestBody CriarLancamentoFinanceiroRequest request) {
         LancamentoFinanceiro lancamento = service.criar(
                 request.tipo(), request.empresaId(), request.categoriaId(), request.fornecedorId(), request.clienteId(),
-                request.obraId(), request.veiculoId(), request.valor(), request.dataCompetencia(), request.vencimento());
+                request.obraId(), request.veiculoId(), request.valor(), request.dataCompetencia(), request.vencimento(),
+                request.descricao(), request.documento());
         LancamentoFinanceiroResponse response = toResponse(lancamento);
         return ResponseEntity.created(URI.create("/api/lancamentos-financeiros/" + lancamento.getId())).body(response);
     }
@@ -43,7 +44,8 @@ public class LancamentoFinanceiroController {
     public LancamentoFinanceiroResponse atualizar(@PathVariable UUID id, @Valid @RequestBody AtualizarLancamentoFinanceiroRequest request) {
         LancamentoFinanceiro lancamento = service.atualizar(
                 id, request.empresaId(), request.categoriaId(), request.fornecedorId(), request.clienteId(),
-                request.obraId(), request.veiculoId(), request.valor(), request.dataCompetencia(), request.vencimento());
+                request.obraId(), request.veiculoId(), request.valor(), request.dataCompetencia(), request.vencimento(),
+                request.descricao(), request.documento());
         return toResponse(lancamento);
     }
 

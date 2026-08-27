@@ -93,7 +93,7 @@ class LancamentoFinanceiroServiceTest {
         when(fornecedorService.buscarPorId(fornecedorId)).thenReturn(fornecedor);
 
         LancamentoFinanceiro lancamento = service.criar("Despesa", empresaId, categoriaId, fornecedorId, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30));
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null);
 
         assertThat(lancamento.getTipo()).isEqualTo("Despesa");
         assertThat(lancamento.getFornecedor()).isSameAs(fornecedor);
@@ -106,7 +106,7 @@ class LancamentoFinanceiroServiceTest {
     void criarDespesaSemFornecedorDeveLancarExcecao() {
         iniciar();
         assertThatThrownBy(() -> service.criar("Despesa", UUID.randomUUID(), UUID.randomUUID(), null, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -114,7 +114,7 @@ class LancamentoFinanceiroServiceTest {
     void criarDespesaComClienteEFornecedorDeveLancarExcecao() {
         iniciar();
         assertThatThrownBy(() -> service.criar("Despesa", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -122,7 +122,7 @@ class LancamentoFinanceiroServiceTest {
     void criarComTipoInvalidoDeveLancarExcecao() {
         iniciar();
         assertThatThrownBy(() -> service.criar("Outro", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -130,7 +130,7 @@ class LancamentoFinanceiroServiceTest {
     void criarComValorNegativoDeveLancarExcecao() {
         iniciar();
         assertThatThrownBy(() -> service.criar("Despesa", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
-                null, null, new BigDecimal("-1.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                null, null, new BigDecimal("-1.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -215,12 +215,12 @@ class LancamentoFinanceiroServiceTest {
         UUID categoriaId = UUID.randomUUID();
         UUID fornecedorId = UUID.randomUUID();
         LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(new BigDecimal("50.00"));
 
         assertThatThrownBy(() -> service.atualizar(id, empresaId, categoriaId, fornecedorId, null, null, null,
-                new BigDecimal("200.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                new BigDecimal("200.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -232,7 +232,7 @@ class LancamentoFinanceiroServiceTest {
         UUID categoriaId = UUID.randomUUID();
         UUID fornecedorId = UUID.randomUUID();
         LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(repository.save(any(LancamentoFinanceiro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(BigDecimal.ZERO);
@@ -241,7 +241,7 @@ class LancamentoFinanceiroServiceTest {
         when(fornecedorService.buscarPorId(fornecedorId)).thenReturn(fornecedor);
 
         LancamentoFinanceiro atualizado = service.atualizar(id, empresaId, categoriaId, fornecedorId, null, null, null,
-                new BigDecimal("200.00"), LocalDate.now(), LocalDate.now().plusDays(30));
+                new BigDecimal("200.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null);
 
         assertThat(atualizado.getValor()).isEqualByComparingTo("200.00");
     }
@@ -251,7 +251,7 @@ class LancamentoFinanceiroServiceTest {
         iniciar();
         UUID id = UUID.randomUUID();
         LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(new BigDecimal("10.00"));
 
@@ -263,7 +263,7 @@ class LancamentoFinanceiroServiceTest {
         iniciar();
         UUID id = UUID.randomUUID();
         LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(repository.save(any(LancamentoFinanceiro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(BigDecimal.ZERO);
@@ -277,7 +277,7 @@ class LancamentoFinanceiroServiceTest {
     void calcularStatusFinanceiroDeveRefletirSomaDasAplicacoes() {
         iniciar();
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         lenient().when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(any())).thenReturn(BigDecimal.ZERO);
         assertThat(service.calcularStatusFinanceiro(lancamento)).isEqualTo("Aberto");
 
@@ -303,7 +303,7 @@ class LancamentoFinanceiroServiceTest {
         when(obraService.buscarPorId(obraId)).thenThrow(new ResourceNotFoundException("Obra não encontrada: " + obraId));
 
         assertThatThrownBy(() -> service.criar("Despesa", empresaId, categoriaId, fornecedorId, null,
-                obraId, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                obraId, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -323,7 +323,7 @@ class LancamentoFinanceiroServiceTest {
         when(veiculoService.buscarPorId(veiculoId)).thenReturn(veiculo);
 
         assertThatThrownBy(() -> service.criar("Despesa", empresaId, categoriaId, fornecedorId, null,
-                null, veiculoId, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                null, veiculoId, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -342,7 +342,7 @@ class LancamentoFinanceiroServiceTest {
         when(repository.save(any(LancamentoFinanceiro.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LancamentoFinanceiro lancamento = service.criar("Despesa", empresaId, categoriaId, fornecedorId, null,
-                null, veiculoId, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30));
+                null, veiculoId, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null);
 
         assertThat(lancamento.getVeiculoId()).isEqualTo(veiculoId);
     }
@@ -356,7 +356,7 @@ class LancamentoFinanceiroServiceTest {
         UUID fornecedorId = UUID.randomUUID();
         UUID obraId = UUID.randomUUID();
         LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(empresaService.buscarPorId(empresaId)).thenReturn(empresa);
         when(categoriaService.buscarPorId(categoriaId)).thenReturn(categoria);
@@ -369,7 +369,7 @@ class LancamentoFinanceiroServiceTest {
                         new BigDecimal("50.00"), null)));
 
         assertThatThrownBy(() -> service.atualizar(id, empresaId, categoriaId, fornecedorId, null, obraId, null,
-                new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30)))
+                new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -381,7 +381,7 @@ class LancamentoFinanceiroServiceTest {
         UUID categoriaId = UUID.randomUUID();
         UUID fornecedorId = UUID.randomUUID();
         LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual");
+                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(repository.save(any(LancamentoFinanceiro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(empresaService.buscarPorId(empresaId)).thenReturn(empresa);
@@ -389,7 +389,7 @@ class LancamentoFinanceiroServiceTest {
         when(fornecedorService.buscarPorId(fornecedorId)).thenReturn(fornecedor);
 
         LancamentoFinanceiro atualizado = service.atualizar(id, empresaId, categoriaId, fornecedorId, null, null, null,
-                new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30));
+                new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null);
 
         assertThat(atualizado.getObraId()).isNull();
         verify(rateioDespesaRepository, never()).findByLancamentoFinanceiroId(any());

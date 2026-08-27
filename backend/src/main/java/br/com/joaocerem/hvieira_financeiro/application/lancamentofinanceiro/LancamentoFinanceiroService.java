@@ -87,7 +87,8 @@ public class LancamentoFinanceiroService {
 
     public LancamentoFinanceiro criar(String tipo, UUID empresaId, UUID categoriaId, UUID fornecedorId,
                                        UUID clienteId, UUID obraId, UUID veiculoId, BigDecimal valor,
-                                       LocalDate dataCompetencia, LocalDate vencimento) {
+                                       LocalDate dataCompetencia, LocalDate vencimento,
+                                       String descricao, String documento) {
         validarTipo(tipo);
         validarExclusividadeFornecedorCliente(tipo, fornecedorId, clienteId);
         Validacoes.exigirValorMonetarioPositivo(valor, "valor");
@@ -100,7 +101,7 @@ public class LancamentoFinanceiroService {
 
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro(
                 tipo, empresa, categoria, fornecedor, cliente, obraId, veiculoId, valor,
-                dataCompetencia, vencimento, "Manual");
+                dataCompetencia, vencimento, "Manual", descricao, documento);
         return repository.save(lancamento);
     }
 
@@ -119,14 +120,18 @@ public class LancamentoFinanceiroService {
         Validacoes.exigirValorMonetarioPositivo(valor, "valor");
         resolverEValidarObraEVeiculo(empresa, obraId, veiculoId);
 
+        // `descricao`/`documento` só existem no caminho manual por enquanto — este caminho
+        // (Cartão via Parcela) não tem interface para preenchê-los.
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro(
-                tipo, empresa, categoria, fornecedor, cliente, obraId, veiculoId, valor, dataCompetencia, vencimento, origem);
+                tipo, empresa, categoria, fornecedor, cliente, obraId, veiculoId, valor, dataCompetencia, vencimento,
+                origem, null, null);
         return repository.save(lancamento);
     }
 
     public LancamentoFinanceiro atualizar(UUID id, UUID empresaId, UUID categoriaId, UUID fornecedorId,
                                            UUID clienteId, UUID obraId, UUID veiculoId, BigDecimal valor,
-                                           LocalDate dataCompetencia, LocalDate vencimento) {
+                                           LocalDate dataCompetencia, LocalDate vencimento,
+                                           String descricao, String documento) {
         LancamentoFinanceiro lancamento = buscarPorId(id);
         validarExclusividadeFornecedorCliente(lancamento.getTipo(), fornecedorId, clienteId);
         Validacoes.exigirValorMonetarioPositivo(valor, "valor");
@@ -159,6 +164,8 @@ public class LancamentoFinanceiroService {
         lancamento.setValor(valor);
         lancamento.setDataCompetencia(dataCompetencia);
         lancamento.setVencimento(vencimento);
+        lancamento.setDescricao(descricao);
+        lancamento.setDocumento(documento);
         return repository.save(lancamento);
     }
 

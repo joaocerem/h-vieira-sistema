@@ -197,6 +197,10 @@ O documento conceitual (Seção 19) deixa deliberadamente em aberto: linguagem, 
 | **Vue 3** | Curva de aprendizado mais suave; muito adequado para telas de formulário/tabela (perfil forte deste sistema: lançamentos, conciliação, faturas) | Ecossistema menor que React para componentes financeiros prontos |
 | **Angular** | Estrutura muito opinativa, força organização — pode encaixar bem com um backend também estruturado | Curva de aprendizado mais alta; verboso para um time pequeno |
 
+**Decisão oficial (T2 — congelada)**: **React + Vite + TypeScript**. Aplicação frontend desacoplada, consumindo exclusivamente a API REST já implementada no backend (Fase 4), sem servidor Node próprio no caminho de execução. **Next.js (e qualquer framework full-stack equivalente, ex. Remix) foi explicitamente descartado**: o sistema é um ERP interno, sem necessidade de SSR/SSG nem SEO, e já tem um backend próprio (Java/Spring Boot) como única fonte de API — adotar um framework full-stack introduziria uma segunda superfície de "backend" (rotas de API do próprio framework de frontend), tensionando diretamente com a fronteira já estabelecida entre `backend/` e `frontend/`. Vite, como bundler/dev server dedicado a SPA, é mais simples e leve que um framework full-stack para esse perfil de consumo. Justificativa completa, incluindo Vue 3 e Angular como alternativas analisadas, registrada em `decisions.md`, decisão #42.
+
+**Arquitetura técnica completa do Frontend**: as demais decisões constituintes (roteamento, testes, cliente HTTP, gerenciamento de estado, autenticação no cliente, UI/estilo, estrutura de pastas, hospedagem — `decisions.md`, decisões #44-#50) e sua síntese numa arquitetura coerente (estrutura de pastas, módulos, ordem de implementação, dependências de S1-S5) estão em `docs/architecture/arquitetura-tecnica-frontend.md`, documento irmão deste.
+
 ### 5.3 Banco de dados
 
 O modelo é fortemente relacional: N:N entre Lançamento e Liquidação, integridade obrigatória entre Compra→Parcela→Lançamento, necessidade de transações atômicas (ex.: registrar uma Liquidação e suas Aplicações precisa ser tudo-ou-nada), e forte necessidade de consultas agregadas (Balanço, custo de Obra, custo de Veículo). Isso aponta para um **banco relacional** — não há, no documento conceitual, nenhum caso de uso que peça um banco não-relacional (documento, grafo, etc.).
@@ -237,9 +241,13 @@ Comparação original, feita antes da definição de T1 — as quatro opções a
 
 **Decisão oficial (T3 — congelada)**: **autenticação própria** — usuário/senha, com **Spring Security** e **JWT** como mecanismo de autenticação. Hash de senha com **Argon2** (preferencial); bcrypt permanece como alternativa apenas caso surja impedimento técnico documentado ao usar Argon2. **Nenhum provedor externo** (Auth0, Clerk, Keycloak) — descartados por desalinhamento com o perfil do sistema (interno, sem cadastro público, poucos usuários, sem necessidade documentada de SSO entre múltiplos sistemas do grupo). Justificativa completa registrada em `decisions.md`, decisão #14.
 
+**Nota — CORS, detalhe de infraestrutura, não decisão nova**: `permitAll()` (autorização) e CORS (o navegador aceitar a chamada cross-origin) são mecanismos independentes do Spring Security — a `SecurityConfig` provisória (`infrastructure/auth/SecurityConfig.java`) precisa registrar explicitamente uma `CorsConfigurationSource`, senão o Frontend (Vite, `localhost:5173` em desenvolvimento) tem toda chamada bloqueada pelo navegador antes de chegar ao Controller, mesmo com todos os endpoints abertos. Origens permitidas vêm de `CorsProperties` (`hvieira.cors.allowed-origins`, `application.yaml`), nunca uma constante fixa — mesmo critério já usado em `ConciliacaoProperties`/T6. `allowCredentials(true)` é obrigatório (cookie httpOnly de T11/decisão #48), o que por regra do próprio protocolo CORS exige origens explícitas, nunca `*`. Achado corrigido nesta sessão, não uma decisão nova — a única decisão envolvida (T3) permanece exatamente como já estava.
+
 ### 5.6 Hospedagem / infraestrutura
 
 **Decisão oficial (T4 — congelada, nível arquitetural)**: a implantação inicial prioriza uma **plataforma PaaS gerenciada** (categoria — ex. Railway, Render ou equivalente), reduzindo ao máximo a carga operacional; a escolha do provedor específico permanece **decisão operacional**, podendo mudar sem impacto na arquitetura. VPS e provedores de maior porte (AWS, Azure ou equivalente) continuam compatíveis com a stack já congelada (Java 21 + Spring Boot + PostgreSQL), mas não são a estratégia inicial — migração para eles só deve ocorrer quando houver necessidade real de escala, disponibilidade, integrações ou requisitos operacionais que a justifiquem. Nenhum provedor específico é escolhido por esta decisão. Justificativa completa registrada em `decisions.md`, decisão #38.
+
+**Decisão oficial (T14 — congelada, Fase 5)**: o build estático do Frontend (React + Vite, T2) é servido pela **mesma plataforma PaaS** definida acima para o backend — sem infraestrutura separada. Plataforma dedicada a estáticos (Vercel, Netlify, Cloudflare Pages) descartada por não haver necessidade real de otimização de CDN/edge demonstrada para o porte deste sistema. Justificativa completa registrada em `decisions.md`, decisão #43.
 
 ---
 
@@ -468,7 +476,6 @@ Nenhuma delas foi decidida silenciosamente neste documento — todas estão regi
 
 | # | Decisão | Opções apresentadas | Onde está discutida |
 |---|---|---|---|
-| 3 | Framework de frontend | React (Next.js) / Vue 3 / Angular | Seção 5.2 |
 | 5 | ORM / camada de acesso a dados | **Já definido como Hibernate/JPA (Spring Data JPA), decorrente da escolha de T1** — resta, só se houver necessidade real, o detalhe de estratégia de uso (ver `pendencias.md`, item B2) | Seção 5.4 |
 | 9 | Orquestração da IA | Chamada direta ao SDK do provedor / Framework de orquestração de agentes | Seção 8 |
 | 10 | Provedor de IA específico | Não avaliado aqui — o conceitual (Seção 19) já deixa isso propositalmente em aberto como "modelo de mercado via API" | Seção 8 |
@@ -487,6 +494,7 @@ Nenhuma delas foi decidida silenciosamente neste documento — todas estão regi
 - "Implementação técnica do vínculo genérico de auditoria" (item 12 original) — decidido: referência polimórfica (`entidade_tipo`/`entidade_id`), sem FK nativa do banco (ver Seção 10 e `decisions.md`, decisão #20).
 - "Mecanismo exato da barreira 'Alto' da IA" (item 8, pendência 12 do conceitual/A8) — decidido: reautenticação (senha) no momento da confirmação, verificada contra o hash já definido em T3 — "Segundo aprovador" excluído da comparação técnica (premissa de A3), "Confirmação simples reforçada" descartada por não oferecer verificação adicional de identidade (ver Seção 8 e `decisions.md`, decisão #22).
 - "Hospedagem/infraestrutura" (item 7 original, T4) — decidido em nível arquitetural: implantação inicial prioriza plataforma PaaS gerenciada, sem provedor específico escolhido; migração para infraestrutura maior condicionada a necessidade real (ver Seção 5.6 e `decisions.md`, decisão #38).
+- "Framework de frontend" (item 3 original, T2) — decidido: React + Vite + TypeScript, aplicação desacoplada consumindo a API REST do backend; Next.js e qualquer framework full-stack equivalente descartados por ausência de necessidade de SSR/SEO e por tensionar com a fronteira backend/frontend já estabelecida (ver Seção 5.2 e `decisions.md`, decisão #42).
 
 **Itens de melhoria futura, registrados pela arbitragem técnica, ainda não decididos** (não bloqueiam implementação nesta fase): delimitar por escrito onde termina o vocabulário "Clean Architecture" e onde começa "porta/adaptador"; documentar, no plano de testes, o que cada camada de teste afirma para cenários compartilhados entre integração e aceitação; adicionar ferramenta de análise de dependência arquitetural à lista de decisões de stack quando a stack for escolhida; ao planejar a resolução de cada pendência de negócio do conceitual, classificá-la como comportamental ou estrutural antes de estimar esforço; priorizar estratégia de índice logo no início da Fase 3 (modelagem do banco), não adiar indefinidamente dentro dela.
 
