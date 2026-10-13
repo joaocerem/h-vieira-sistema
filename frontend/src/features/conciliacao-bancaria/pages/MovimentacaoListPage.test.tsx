@@ -7,7 +7,8 @@ import { MovimentacaoListPage } from './MovimentacaoListPage'
 import { movimentacaoBancariaApi } from '../api/movimentacaoBancariaApi'
 import { vinculoConciliacaoApi } from '../api/vinculoConciliacaoApi'
 import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
-import { useLiquidacaoOptions } from '@/shared/hooks/useLiquidacaoOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
+import { useLancamentoOptions } from '@/shared/hooks/useLancamentoOptions'
 
 vi.mock('../api/movimentacaoBancariaApi', () => ({
   movimentacaoBancariaApi: { listar: vi.fn(), reclassificar: vi.fn() },
@@ -23,7 +24,8 @@ vi.mock('../api/vinculoConciliacaoApi', () => ({
   },
 }))
 vi.mock('@/shared/hooks/useContaBancariaOptions', () => ({ useContaBancariaOptions: vi.fn() }))
-vi.mock('@/shared/hooks/useLiquidacaoOptions', () => ({ useLiquidacaoOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useEmpresaOptions', () => ({ useEmpresaOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useLancamentoOptions', () => ({ useLancamentoOptions: vi.fn() }))
 
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -36,13 +38,17 @@ function renderWithProviders(ui: React.ReactElement) {
 
 function setupMocks() {
   vi.mocked(useContaBancariaOptions).mockReturnValue({
-    data: [{ id: 'cb1', banco: 'Itaú', apelido: 'Conta Movimento' }],
+    data: [{ id: 'cb1', empresaId: 'e1', banco: 'Itaú' }],
     isLoading: false,
   } as unknown as ReturnType<typeof useContaBancariaOptions>)
-  vi.mocked(useLiquidacaoOptions).mockReturnValue({
+  vi.mocked(useEmpresaOptions).mockReturnValue({
+    data: [{ id: 'e1', nome: 'H Vieira' }],
+    isLoading: false,
+  } as unknown as ReturnType<typeof useEmpresaOptions>)
+  vi.mocked(useLancamentoOptions).mockReturnValue({
     data: [],
     isLoading: false,
-  } as unknown as ReturnType<typeof useLiquidacaoOptions>)
+  } as unknown as ReturnType<typeof useLancamentoOptions>)
 }
 
 describe('MovimentacaoListPage', () => {
@@ -59,7 +65,7 @@ describe('MovimentacaoListPage', () => {
       },
     ])
     vi.mocked(vinculoConciliacaoApi.listar).mockResolvedValueOnce([
-      { id: 'v1', movimentacaoBancariaId: 'm1', liquidacaoFinanceiraId: 'l1', estadoConciliacao: 'Sugerido' },
+      { id: 'v1', movimentacaoBancariaId: 'm1', lancamentosFinanceirosIds: ['l1'], estadoConciliacao: 'Sugerido' },
     ])
 
     renderWithProviders(<MovimentacaoListPage />)
@@ -87,6 +93,7 @@ describe('MovimentacaoListPage', () => {
       processados: 3,
       sugeridos: 2,
       semCorrespondencia: 1,
+      comMultiplosCandidatos: 0,
     })
 
     const user = userEvent.setup()

@@ -1,7 +1,7 @@
 package br.com.joaocerem.hvieira_financeiro.application.fatura;
 
 import br.com.joaocerem.hvieira_financeiro.application.cartaocredito.CartaoCreditoService;
-import br.com.joaocerem.hvieira_financeiro.application.liquidacaofinanceira.LiquidacaoFinanceiraService;
+import br.com.joaocerem.hvieira_financeiro.application.conciliacaobancaria.VinculoConciliacaoService;
 import br.com.joaocerem.hvieira_financeiro.application.parcela.ParcelaService;
 import br.com.joaocerem.hvieira_financeiro.common.exception.BusinessException;
 import br.com.joaocerem.hvieira_financeiro.common.exception.ResourceNotFoundException;
@@ -14,7 +14,6 @@ import br.com.joaocerem.hvieira_financeiro.domain.fatura.Fatura;
 import br.com.joaocerem.hvieira_financeiro.domain.fatura.FaturaRepository;
 import br.com.joaocerem.hvieira_financeiro.domain.fornecedor.Fornecedor;
 import br.com.joaocerem.hvieira_financeiro.domain.lancamentofinanceiro.LancamentoFinanceiro;
-import br.com.joaocerem.hvieira_financeiro.domain.liquidacaofinanceira.LiquidacaoFinanceira;
 import br.com.joaocerem.hvieira_financeiro.domain.parcela.Parcela;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +31,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -46,16 +44,16 @@ class FaturaServiceTest {
     @Mock
     private ParcelaService parcelaService;
     @Mock
-    private LiquidacaoFinanceiraService liquidacaoFinanceiraService;
+    private VinculoConciliacaoService vinculoConciliacaoService;
 
     private FaturaService service;
     private CartaoCredito cartao;
 
     private void iniciar() {
-        service = new FaturaService(repository, cartaoCreditoService, parcelaService, liquidacaoFinanceiraService);
+        service = new FaturaService(repository, cartaoCreditoService, parcelaService, vinculoConciliacaoService);
         Empresa empresa = new Empresa("H Vieira");
-        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil", "Conta Principal");
-        cartao = new CartaoCredito(conta, "Nubank", "Cartão PJ", 20, 5);
+        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil");
+        cartao = new CartaoCredito(conta, "Nubank", 20, 5);
     }
 
     private CompraCartao compra() {
@@ -100,10 +98,9 @@ class FaturaServiceTest {
     }
 
     @Test
-    void pagarDeveCriarLiquidacaoComAplicacoesDosLancamentosGerados() {
+    void calcularPagaDeveSerVerdadeiroQuandoTodosOsLancamentosGeradosEstaoConciliados() {
         iniciar();
         UUID faturaId = UUID.randomUUID();
-        UUID contaBancariaId = UUID.randomUUID();
         Fatura fatura = new Fatura(cartao, "2026-03", new BigDecimal("18000.00"), new BigDecimal("30000.00"));
         ReflectionTestUtils.setField(fatura, "id", faturaId);
 
@@ -111,48 +108,49 @@ class FaturaServiceTest {
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", cartao.getContaBancaria().getEmpresa(),
                 compra.getCategoria(), compra.getFornecedor(), null, null, null, new BigDecimal("5000.00"),
                 LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 5), "Cartão via Parcela", null, null);
+        ReflectionTestUtils.setField(lancamento, "id", UUID.randomUUID());
         Parcela parcelaComLancamento = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("5000.00"), LocalDate.of(2026, 3, 5));
         parcelaComLancamento.vincularLancamento(lancamento);
         Parcela parcelaSemLancamento = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("12000.00"), LocalDate.of(2026, 3, 5));
 
-        when(repository.findById(faturaId)).thenReturn(Optional.of(fatura));
         when(parcelaService.listarPorFatura(faturaId)).thenReturn(List.of(parcelaComLancamento, parcelaSemLancamento));
-        LiquidacaoFinanceira liquidacaoCriada = new LiquidacaoFinanceira("Pagamento", LocalDate.now(), new BigDecimal("30000.00"), cartao.getContaBancaria());
-        when(liquidacaoFinanceiraService.criar(eq("Pagamento"), any(), eq(new BigDecimal("30000.00")), eq(contaBancariaId), any()))
-                .thenReturn(liquidacaoCriada);
-        when(repository.save(any(Fatura.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(vinculoConciliacaoService.estaConciliado(lancamento.getId())).thenReturn(true);
 
-        Fatura paga = service.pagar(faturaId, contaBancariaId, LocalDate.now());
-
-        assertThat(paga.getLiquidacaoFinanceira()).isSameAs(liquidacaoCriada);
+        assertThat(service.calcularPaga(fatura)).isTrue();
     }
 
     @Test
-    void pagarSemNenhumLancamentoGeradoDeveLancarExcecao() {
+    void calcularPagaDeveSerFalsoQuandoAlgumLancamentoGeradoNaoEstaConciliado() {
+        iniciar();
+        UUID faturaId = UUID.randomUUID();
+        Fatura fatura = new Fatura(cartao, "2026-03", new BigDecimal("5000.00"), new BigDecimal("5000.00"));
+        ReflectionTestUtils.setField(fatura, "id", faturaId);
+
+        CompraCartao compra = compra();
+        LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", cartao.getContaBancaria().getEmpresa(),
+                compra.getCategoria(), compra.getFornecedor(), null, null, null, new BigDecimal("5000.00"),
+                LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 5), "Cartão via Parcela", null, null);
+        ReflectionTestUtils.setField(lancamento, "id", UUID.randomUUID());
+        Parcela parcela = new Parcela("Compra Cartão", compra, 1, 1, new BigDecimal("5000.00"), LocalDate.of(2026, 3, 5));
+        parcela.vincularLancamento(lancamento);
+
+        when(parcelaService.listarPorFatura(faturaId)).thenReturn(List.of(parcela));
+        when(vinculoConciliacaoService.estaConciliado(lancamento.getId())).thenReturn(false);
+
+        assertThat(service.calcularPaga(fatura)).isFalse();
+    }
+
+    @Test
+    void calcularPagaDeveSerFalsoQuandoNenhumaParcelaGerouLancamento() {
         iniciar();
         UUID faturaId = UUID.randomUUID();
         Fatura fatura = new Fatura(cartao, "2026-03", new BigDecimal("0.00"), new BigDecimal("12000.00"));
         ReflectionTestUtils.setField(fatura, "id", faturaId);
         Parcela parcelaSemLancamento = new Parcela("Compra Cartão", compra(), 1, 1, new BigDecimal("12000.00"), LocalDate.of(2026, 3, 5));
 
-        when(repository.findById(faturaId)).thenReturn(Optional.of(fatura));
         when(parcelaService.listarPorFatura(faturaId)).thenReturn(List.of(parcelaSemLancamento));
 
-        assertThatThrownBy(() -> service.pagar(faturaId, UUID.randomUUID(), LocalDate.now()))
-                .isInstanceOf(BusinessException.class);
-    }
-
-    @Test
-    void pagarFaturaJaPagaDeveLancarExcecao() {
-        iniciar();
-        UUID faturaId = UUID.randomUUID();
-        Fatura fatura = new Fatura(cartao, "2026-03", new BigDecimal("5000.00"), new BigDecimal("5000.00"));
-        ReflectionTestUtils.setField(fatura, "id", faturaId);
-        fatura.marcarComoPaga(new LiquidacaoFinanceira("Pagamento", LocalDate.now(), new BigDecimal("5000.00"), cartao.getContaBancaria()));
-        when(repository.findById(faturaId)).thenReturn(Optional.of(fatura));
-
-        assertThatThrownBy(() -> service.pagar(faturaId, UUID.randomUUID(), LocalDate.now()))
-                .isInstanceOf(BusinessException.class);
+        assertThat(service.calcularPaga(fatura)).isFalse();
     }
 
     @Test

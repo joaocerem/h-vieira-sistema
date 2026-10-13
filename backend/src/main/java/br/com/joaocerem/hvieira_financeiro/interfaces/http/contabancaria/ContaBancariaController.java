@@ -22,7 +22,7 @@ public class ContaBancariaController {
 
     @PostMapping
     public ResponseEntity<ContaBancariaResponse> criar(@Valid @RequestBody CriarContaBancariaRequest request) {
-        ContaBancaria contaBancaria = service.criar(request.empresaId(), request.banco(), request.apelido());
+        ContaBancaria contaBancaria = service.criar(request.empresaId(), request.banco());
         ContaBancariaResponse response = ContaBancariaMapper.toResponse(contaBancaria);
         return ResponseEntity.created(URI.create("/api/contas-bancarias/" + contaBancaria.getId())).body(response);
     }
@@ -39,6 +39,6 @@ public class ContaBancariaController {
 
     @PutMapping("/{id}")
     public ContaBancariaResponse atualizar(@PathVariable UUID id, @Valid @RequestBody AtualizarContaBancariaRequest request) {
-        return ContaBancariaMapper.toResponse(service.atualizar(id, request.banco(), request.apelido()));
+        return ContaBancariaMapper.toResponse(service.atualizar(id, request.banco()));
     }
 }

@@ -15,7 +15,7 @@ function renderWithQueryClient(ui: React.ReactElement) {
 }
 
 describe('ContaBancariaForm', () => {
-  it('exige empresa, banco e apelido no modo criar', async () => {
+  it('exige empresa e banco no modo criar', async () => {
     vi.mocked(useEmpresaOptions).mockReturnValue({
       data: [{ id: '1', nome: 'H Vieira Terraplanagem' }],
       isLoading: false,
@@ -30,7 +30,6 @@ describe('ContaBancariaForm', () => {
 
     expect(await screen.findByText(/empresa é obrigatória/i)).toBeInTheDocument()
     expect(screen.getByText(/banco é obrigatório/i)).toBeInTheDocument()
-    expect(screen.getByText(/apelido é obrigatório/i)).toBeInTheDocument()
   })
 
   it('não mostra nem exige o campo empresa no modo editar', () => {
@@ -42,7 +41,7 @@ describe('ContaBancariaForm', () => {
     renderWithQueryClient(
       <ContaBancariaForm
         modo="editar"
-        defaultValues={{ empresaId: undefined, banco: 'Itaú', apelido: 'Conta Movimento' }}
+        defaultValues={{ empresaId: undefined, banco: 'Itaú' }}
         onSubmit={vi.fn()}
         isSubmitting={false}
         submitLabel="Salvar"
@@ -52,7 +51,7 @@ describe('ContaBancariaForm', () => {
     expect(screen.queryByLabelText(/empresa/i)).not.toBeInTheDocument()
   })
 
-  it('envia empresaId, banco e apelido preenchidos no modo criar', async () => {
+  it('envia empresaId e banco preenchidos no modo criar', async () => {
     vi.mocked(useEmpresaOptions).mockReturnValue({
       data: [{ id: '1', nome: 'H Vieira Terraplanagem' }],
       isLoading: false,
@@ -66,13 +65,11 @@ describe('ContaBancariaForm', () => {
 
     await user.selectOptions(screen.getByLabelText(/empresa/i), '1')
     await user.type(screen.getByLabelText(/banco/i), 'Itaú')
-    await user.type(screen.getByLabelText(/apelido/i), 'Conta Movimento')
     await user.click(screen.getByRole('button', { name: /criar/i }))
 
     expect(onSubmit.mock.calls[0][0]).toEqual({
       empresaId: '1',
       banco: 'Itaú',
-      apelido: 'Conta Movimento',
     })
   })
 })

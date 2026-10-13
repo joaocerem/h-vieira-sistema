@@ -6,7 +6,6 @@ public record CartaoCreditoResponse(
         UUID id,
         UUID contaBancariaId,
         String banco,
-        String apelido,
         Integer diaFechamento,
         Integer diaVencimento
 ) {

@@ -2,13 +2,13 @@ package br.com.joaocerem.hvieira_financeiro.application.lancamentofinanceiro;
 
 import br.com.joaocerem.hvieira_financeiro.application.categoria.CategoriaService;
 import br.com.joaocerem.hvieira_financeiro.application.cliente.ClienteService;
+import br.com.joaocerem.hvieira_financeiro.application.conciliacaobancaria.VinculoConciliacaoService;
 import br.com.joaocerem.hvieira_financeiro.application.empresa.EmpresaService;
 import br.com.joaocerem.hvieira_financeiro.application.fornecedor.FornecedorService;
 import br.com.joaocerem.hvieira_financeiro.application.frota.VeiculoService;
 import br.com.joaocerem.hvieira_financeiro.application.obra.ObraService;
 import br.com.joaocerem.hvieira_financeiro.common.exception.BusinessException;
 import br.com.joaocerem.hvieira_financeiro.common.exception.ResourceNotFoundException;
-import br.com.joaocerem.hvieira_financeiro.domain.aplicacaodeliquidacao.AplicacaoDeLiquidacaoRepository;
 import br.com.joaocerem.hvieira_financeiro.domain.categoria.Categoria;
 import br.com.joaocerem.hvieira_financeiro.domain.cliente.Cliente;
 import br.com.joaocerem.hvieira_financeiro.domain.empresa.Empresa;
@@ -33,7 +33,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,8 +42,6 @@ class LancamentoFinanceiroServiceTest {
 
     @Mock
     private LancamentoFinanceiroRepository repository;
-    @Mock
-    private AplicacaoDeLiquidacaoRepository aplicacaoDeLiquidacaoRepository;
     @Mock
     private RateioDespesaRepository rateioDespesaRepository;
     @Mock
@@ -59,6 +56,8 @@ class LancamentoFinanceiroServiceTest {
     private ObraService obraService;
     @Mock
     private VeiculoService veiculoService;
+    @Mock
+    private VinculoConciliacaoService vinculoConciliacaoService;
 
     private LancamentoFinanceiroService service;
 
@@ -68,8 +67,9 @@ class LancamentoFinanceiroServiceTest {
     private Cliente cliente;
 
     private void iniciar() {
-        service = new LancamentoFinanceiroService(repository, aplicacaoDeLiquidacaoRepository, rateioDespesaRepository,
-                empresaService, categoriaService, fornecedorService, clienteService, obraService, veiculoService);
+        service = new LancamentoFinanceiroService(repository, rateioDespesaRepository,
+                empresaService, categoriaService, fornecedorService, clienteService, obraService, veiculoService,
+                vinculoConciliacaoService);
         empresa = new Empresa("H Vieira");
         categoria = new Categoria("Combustível", "Despesa");
         fornecedor = new Fornecedor("Posto Ipiranga");
@@ -207,25 +207,12 @@ class LancamentoFinanceiroServiceTest {
         assertThatThrownBy(() -> service.buscarPorId(id)).isInstanceOf(ResourceNotFoundException.class);
     }
 
-    @Test
-    void atualizarValorDeveSerBloqueadoQuandoExisteAplicacaoVinculada() {
-        iniciar();
-        UUID id = UUID.randomUUID();
-        UUID empresaId = UUID.randomUUID();
-        UUID categoriaId = UUID.randomUUID();
-        UUID fornecedorId = UUID.randomUUID();
-        LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
-        when(repository.findById(id)).thenReturn(Optional.of(existente));
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(new BigDecimal("50.00"));
-
-        assertThatThrownBy(() -> service.atualizar(id, empresaId, categoriaId, fornecedorId, null, null, null,
-                new BigDecimal("200.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null))
-                .isInstanceOf(BusinessException.class);
-    }
+    // --- atualizar/cancelar nunca bloqueiam por conciliação (Sprint 3 — rodada de evolução
+    // operacional, decisão explícita: "o Lançamento nunca deve ser bloqueado para edição/
+    // cancelamento apenas porque já foi conciliado"); em vez disso, revalidam a conciliação. ---
 
     @Test
-    void atualizarValorDevePermitidoQuandoNaoExisteAplicacaoVinculada() {
+    void atualizarDeveChamarRevalidarConciliacaoMesmoQuandoNaoExisteVinculoConfirmado() {
         iniciar();
         UUID id = UUID.randomUUID();
         UUID empresaId = UUID.randomUUID();
@@ -235,7 +222,6 @@ class LancamentoFinanceiroServiceTest {
                 null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(repository.save(any(LancamentoFinanceiro.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(BigDecimal.ZERO);
         when(empresaService.buscarPorId(empresaId)).thenReturn(empresa);
         when(categoriaService.buscarPorId(categoriaId)).thenReturn(categoria);
         when(fornecedorService.buscarPorId(fornecedorId)).thenReturn(fornecedor);
@@ -244,48 +230,36 @@ class LancamentoFinanceiroServiceTest {
                 new BigDecimal("200.00"), LocalDate.now(), LocalDate.now().plusDays(30), null, null);
 
         assertThat(atualizado.getValor()).isEqualByComparingTo("200.00");
+        verify(vinculoConciliacaoService).revalidarConciliacao(atualizado);
     }
 
     @Test
-    void cancelarDeveSerBloqueadoQuandoSomaAplicadaDiferenteDeZero() {
-        iniciar();
-        UUID id = UUID.randomUUID();
-        LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
-                null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
-        when(repository.findById(id)).thenReturn(Optional.of(existente));
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(new BigDecimal("10.00"));
-
-        assertThatThrownBy(() -> service.cancelar(id)).isInstanceOf(BusinessException.class);
-    }
-
-    @Test
-    void cancelarDevePermitidoQuandoSomaAplicadaZero() {
+    void cancelarNuncaBloqueiaMesmoJaConciliadoEDeveChamarRevalidarConciliacao() {
         iniciar();
         UUID id = UUID.randomUUID();
         LancamentoFinanceiro existente = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
                 null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(repository.save(any(LancamentoFinanceiro.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id)).thenReturn(BigDecimal.ZERO);
 
         LancamentoFinanceiro cancelado = service.cancelar(id);
 
         assertThat(cancelado.getSituacaoAdministrativa()).isEqualTo("Cancelado");
+        verify(vinculoConciliacaoService).revalidarConciliacao(cancelado);
     }
 
     @Test
-    void calcularStatusFinanceiroDeveRefletirSomaDasAplicacoes() {
+    void calcularStatusFinanceiroDeveSerBinarioConciliadoOuNaoConciliado() {
         iniciar();
         LancamentoFinanceiro lancamento = new LancamentoFinanceiro("Despesa", empresa, categoria, fornecedor, null,
                 null, null, new BigDecimal("100.00"), LocalDate.now(), LocalDate.now().plusDays(30), "Manual", null, null);
-        lenient().when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(any())).thenReturn(BigDecimal.ZERO);
-        assertThat(service.calcularStatusFinanceiro(lancamento)).isEqualTo("Aberto");
+        ReflectionTestUtils.setField(lancamento, "id", UUID.randomUUID());
 
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(any())).thenReturn(new BigDecimal("40.00"));
-        assertThat(service.calcularStatusFinanceiro(lancamento)).isEqualTo("Parcialmente Pago-Recebido");
+        when(vinculoConciliacaoService.estaConciliado(lancamento.getId())).thenReturn(false);
+        assertThat(service.calcularStatusFinanceiro(lancamento)).isEqualTo("Não Conciliado");
 
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(any())).thenReturn(new BigDecimal("100.00"));
-        assertThat(service.calcularStatusFinanceiro(lancamento)).isEqualTo("Pago-Recebido");
+        when(vinculoConciliacaoService.estaConciliado(lancamento.getId())).thenReturn(true);
+        assertThat(service.calcularStatusFinanceiro(lancamento)).isEqualTo("Conciliado");
     }
 
     // --- obraId/veiculoId (achado da auditoria final da Fase 4: existência e exclusividade obra × Rateio) ---

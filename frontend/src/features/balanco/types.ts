@@ -3,10 +3,12 @@
  * regra 8 (Seção 2). Só leitura/agregação — sem entidade própria
  * (`arquitetura-tecnica.md`, Seção 2), nunca lê `MOVIMENTAÇÃO_BANCÁRIA` diretamente.
  *
- * - **Realizado**: soma da fração de `LANÇAMENTO_FINANCEIRO` já coberta por
- *   `APLICAÇÃO_DE_LIQUIDAÇÃO`.
- * - **Projetado**: soma de `LANÇAMENTO_FINANCEIRO` por completo (Aberto + Parcial + Pago,
- *   exceto Cancelado).
+ * A partir da Sprint 3 (rodada de evolução operacional):
+ * - **Realizado**: soma dos `LANÇAMENTO_FINANCEIRO` ligados a algum Vínculo Conciliação
+ *   `Confirmado` (substitui a soma por `APLICAÇÃO_DE_LIQUIDAÇÃO`, removida junto com
+ *   Liquidação Financeira).
+ * - **Projetado**: soma de `LANÇAMENTO_FINANCEIRO` por completo (todos os Ativos, conciliados
+ *   ou não).
  */
 export interface Balanco {
   receitasRealizadas: number

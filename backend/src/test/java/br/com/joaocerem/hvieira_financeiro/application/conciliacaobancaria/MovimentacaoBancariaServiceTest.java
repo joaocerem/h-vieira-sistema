@@ -9,13 +9,11 @@ import br.com.joaocerem.hvieira_financeiro.domain.conciliacaobancaria.VinculoCon
 import br.com.joaocerem.hvieira_financeiro.domain.conciliacaobancaria.VinculoConciliacaoRepository;
 import br.com.joaocerem.hvieira_financeiro.domain.contabancaria.ContaBancaria;
 import br.com.joaocerem.hvieira_financeiro.domain.empresa.Empresa;
-import br.com.joaocerem.hvieira_financeiro.domain.liquidacaofinanceira.LiquidacaoFinanceira;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -46,7 +44,7 @@ class MovimentacaoBancariaServiceTest {
 
     private void iniciar() {
         service = new MovimentacaoBancariaService(repository, vinculoConciliacaoRepository, contaBancariaService);
-        contaBancaria = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil", "Conta Principal");
+        contaBancaria = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil");
     }
 
     @Test
@@ -65,7 +63,7 @@ class MovimentacaoBancariaServiceTest {
         ArgumentCaptor<VinculoConciliacao> vinculoCaptor = ArgumentCaptor.forClass(VinculoConciliacao.class);
         verify(vinculoConciliacaoRepository).save(vinculoCaptor.capture());
         assertThat(vinculoCaptor.getValue().getEstadoConciliacao()).isEqualTo(VinculoConciliacao.NAO_VINCULADO);
-        assertThat(vinculoCaptor.getValue().getLiquidacaoFinanceira()).isNull();
+        assertThat(vinculoCaptor.getValue().getLancamentosFinanceiros()).isEmpty();
     }
 
     @Test
@@ -84,34 +82,6 @@ class MovimentacaoBancariaServiceTest {
         assertThatThrownBy(() -> service.importar(contaBancariaId, List.of(
                 new ItemImportacaoMovimentacao(LocalDate.now(), "  ", new BigDecimal("10.00")))))
                 .isInstanceOf(BusinessException.class);
-    }
-
-    @Test
-    void gerarAPartirDeLiquidacaoDePagamentoDeveGerarValorNegativoEVinculoConfirmado() {
-        iniciar();
-        LiquidacaoFinanceira liquidacao = new LiquidacaoFinanceira("Pagamento", LocalDate.now(), new BigDecimal("300.00"), contaBancaria);
-        ReflectionTestUtils.setField(liquidacao, "id", UUID.randomUUID());
-        when(repository.save(any(MovimentacaoBancaria.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        MovimentacaoBancaria movimentacao = service.gerarAPartirDeLiquidacao(liquidacao);
-
-        assertThat(movimentacao.getValor()).isEqualByComparingTo(new BigDecimal("-300.00"));
-
-        ArgumentCaptor<VinculoConciliacao> vinculoCaptor = ArgumentCaptor.forClass(VinculoConciliacao.class);
-        verify(vinculoConciliacaoRepository).save(vinculoCaptor.capture());
-        assertThat(vinculoCaptor.getValue().getEstadoConciliacao()).isEqualTo(VinculoConciliacao.CONFIRMADO);
-        assertThat(vinculoCaptor.getValue().getLiquidacaoFinanceira()).isSameAs(liquidacao);
-    }
-
-    @Test
-    void gerarAPartirDeLiquidacaoDeRecebimentoDeveGerarValorPositivo() {
-        iniciar();
-        LiquidacaoFinanceira liquidacao = new LiquidacaoFinanceira("Recebimento", LocalDate.now(), new BigDecimal("500.00"), contaBancaria);
-        when(repository.save(any(MovimentacaoBancaria.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        MovimentacaoBancaria movimentacao = service.gerarAPartirDeLiquidacao(liquidacao);
-
-        assertThat(movimentacao.getValor()).isEqualByComparingTo(new BigDecimal("500.00"));
     }
 
     @Test

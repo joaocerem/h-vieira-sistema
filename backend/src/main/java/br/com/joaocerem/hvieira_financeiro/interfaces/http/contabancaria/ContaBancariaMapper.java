@@ -11,8 +11,7 @@ public final class ContaBancariaMapper {
         return new ContaBancariaResponse(
                 contaBancaria.getId(),
                 contaBancaria.getEmpresa().getId(),
-                contaBancaria.getBanco(),
-                contaBancaria.getApelido()
+                contaBancaria.getBanco()
         );
     }
 }

@@ -1,6 +1,6 @@
 package br.com.joaocerem.hvieira_financeiro.application.consultasfinanceiras;
 
-import br.com.joaocerem.hvieira_financeiro.domain.aplicacaodeliquidacao.AplicacaoDeLiquidacaoRepository;
+import br.com.joaocerem.hvieira_financeiro.domain.conciliacaobancaria.VinculoConciliacaoRepository;
 import br.com.joaocerem.hvieira_financeiro.domain.lancamentofinanceiro.LancamentoFinanceiroRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,20 +19,20 @@ class ConsultasFinanceirasServiceTest {
     @Mock
     private LancamentoFinanceiroRepository lancamentoFinanceiroRepository;
     @Mock
-    private AplicacaoDeLiquidacaoRepository aplicacaoDeLiquidacaoRepository;
+    private VinculoConciliacaoRepository vinculoConciliacaoRepository;
 
     private ConsultasFinanceirasService service;
 
     private void iniciar() {
-        service = new ConsultasFinanceirasService(lancamentoFinanceiroRepository, aplicacaoDeLiquidacaoRepository);
+        service = new ConsultasFinanceirasService(lancamentoFinanceiroRepository, vinculoConciliacaoRepository);
     }
 
     @Test
-    void calcularRealizadoDeveSomarAplicacoesPorTipoESubtrairResultado() {
+    void calcularRealizadoDeveSomarLancamentosConciliadosPorTipoESubtrairResultado() {
         iniciar();
         UUID empresaId = UUID.randomUUID();
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorTipo("Despesa", empresaId)).thenReturn(new BigDecimal("18000.00"));
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorTipo("Receita", empresaId)).thenReturn(new BigDecimal("30000.00"));
+        when(vinculoConciliacaoRepository.somarValorConciliadoPorTipo("Despesa", empresaId)).thenReturn(new BigDecimal("18000.00"));
+        when(vinculoConciliacaoRepository.somarValorConciliadoPorTipo("Receita", empresaId)).thenReturn(new BigDecimal("30000.00"));
 
         ResultadoFinanceiro resultado = service.calcularRealizado(empresaId);
 
@@ -58,8 +58,8 @@ class ConsultasFinanceirasServiceTest {
     @Test
     void calcularRealizadoComEmpresaIdNuloDeveSomarTodasAsEmpresas() {
         iniciar();
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorTipo("Despesa", null)).thenReturn(BigDecimal.ZERO);
-        when(aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorTipo("Receita", null)).thenReturn(new BigDecimal("100.00"));
+        when(vinculoConciliacaoRepository.somarValorConciliadoPorTipo("Despesa", null)).thenReturn(BigDecimal.ZERO);
+        when(vinculoConciliacaoRepository.somarValorConciliadoPorTipo("Receita", null)).thenReturn(new BigDecimal("100.00"));
 
         ResultadoFinanceiro resultado = service.calcularRealizado(null);
 

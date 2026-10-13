@@ -46,7 +46,7 @@ public class VinculoConciliacaoController {
 
     @PostMapping("/{id}/vincular")
     public VinculoConciliacaoResponse vincularManualmente(@PathVariable UUID id, @Valid @RequestBody VincularManualmenteRequest request) {
-        return VinculoConciliacaoMapper.toResponse(service.vincularManualmente(id, request.liquidacaoFinanceiraId()));
+        return VinculoConciliacaoMapper.toResponse(service.vincularManualmente(id, request.lancamentoFinanceiroIds()));
     }
 
     @GetMapping("/{id}")

@@ -19,6 +19,9 @@ import java.util.UUID;
  *
  * `empresa` não tem setter: o documento de domínio marca a reatribuição de Empresa após a criação como
  * "não definido... inferência: improvável" — não exponho um caminho de atualização até essa decisão existir.
+ *
+ * Sem `apelido` (decisão de negócio, Sprint 3 — rodada de evolução operacional): identificação
+ * passa a ser Empresa + Banco, sem apelido próprio.
  */
 @Entity
 @Table(name = "contas_bancarias")
@@ -35,17 +38,13 @@ public class ContaBancaria {
     @Column(name = "banco", nullable = false)
     private String banco;
 
-    @Column(name = "apelido", nullable = false)
-    private String apelido;
-
     protected ContaBancaria() {
         // exigido pelo JPA
     }
 
-    public ContaBancaria(Empresa empresa, String banco, String apelido) {
+    public ContaBancaria(Empresa empresa, String banco) {
         this.empresa = empresa;
         this.banco = banco;
-        this.apelido = apelido;
     }
 
     public UUID getId() {
@@ -62,13 +61,5 @@ public class ContaBancaria {
 
     public void setBanco(String banco) {
         this.banco = banco;
-    }
-
-    public String getApelido() {
-        return apelido;
-    }
-
-    public void setApelido(String apelido) {
-        this.apelido = apelido;
     }
 }

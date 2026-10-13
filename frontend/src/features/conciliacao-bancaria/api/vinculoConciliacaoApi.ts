@@ -45,10 +45,14 @@ export const vinculoConciliacaoApi = {
     const { data } = await apiClient.post<VinculoConciliacao>(`${BASE_PATH}/${id}/sem-correspondencia`)
     return data
   },
-  /** Recusado pelo backend quando o Vínculo já está `Confirmado`. */
-  vincularManualmente: async (id: string, liquidacaoFinanceiraId: string): Promise<VinculoConciliacao> => {
+  /**
+   * Recusado pelo backend quando o Vínculo já está `Confirmado`. `lancamentoFinanceiroIds`
+   * (Sprint 3 — rodada de evolução operacional) — um ou mais Lançamentos escolhidos de uma vez
+   * (ex. pagamento de fatura de cartão cobrindo várias Parcelas).
+   */
+  vincularManualmente: async (id: string, lancamentoFinanceiroIds: string[]): Promise<VinculoConciliacao> => {
     const { data } = await apiClient.post<VinculoConciliacao>(`${BASE_PATH}/${id}/vincular`, {
-      liquidacaoFinanceiraId,
+      lancamentoFinanceiroIds,
     })
     return data
   },

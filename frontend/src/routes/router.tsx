@@ -17,9 +17,6 @@ import { UsuarioListPage } from '@/features/usuario/pages/UsuarioListPage'
 import { UsuarioFormPage } from '@/features/usuario/pages/UsuarioFormPage'
 import { LancamentoListPage } from '@/features/lancamento-financeiro/pages/LancamentoListPage'
 import { LancamentoFormPage } from '@/features/lancamento-financeiro/pages/LancamentoFormPage'
-import { LiquidacaoListPage } from '@/features/liquidacao-financeira/pages/LiquidacaoListPage'
-import { LiquidacaoFormPage } from '@/features/liquidacao-financeira/pages/LiquidacaoFormPage'
-import { LiquidacaoDetailPage } from '@/features/liquidacao-financeira/pages/LiquidacaoDetailPage'
 import { ObraListPage } from '@/features/obra/pages/ObraListPage'
 import { ObraFormPage } from '@/features/obra/pages/ObraFormPage'
 import { VeiculoListPage } from '@/features/frota/pages/VeiculoListPage'
@@ -33,13 +30,10 @@ import { CompraCartaoFormPage } from '@/features/compra-cartao/pages/CompraCarta
 import { FaturaListPage } from '@/features/fatura/pages/FaturaListPage'
 import { FaturaFecharCicloPage } from '@/features/fatura/pages/FaturaFecharCicloPage'
 import { FaturaDetailPage } from '@/features/fatura/pages/FaturaDetailPage'
-import { FaturaPagarPage } from '@/features/fatura/pages/FaturaPagarPage'
 import { ParcelaListPage } from '@/features/parcela/pages/ParcelaListPage'
 import { ContratoFinanceiroListPage } from '@/features/financiamento-consorcio/pages/ContratoFinanceiroListPage'
 import { ContratoFinanceiroFormPage } from '@/features/financiamento-consorcio/pages/ContratoFinanceiroFormPage'
 import { BalancoPage } from '@/features/balanco/pages/BalancoPage'
-import { AjusteFinanceiroListPage } from '@/features/ajuste-financeiro/pages/AjusteFinanceiroListPage'
-import { AjusteFinanceiroFormPage } from '@/features/ajuste-financeiro/pages/AjusteFinanceiroFormPage'
 
 /**
  * Definição central de rotas (`decisions.md`, decisão #44) — nenhuma feature define rota fora
@@ -118,16 +112,6 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        // Sem rota `nova`+`:id/editar` juntas — Liquidação é imutável (D12), só `nova` (criação)
-        // e `:id` (detalhe só leitura), nunca edição.
-        path: 'liquidacoes-financeiras',
-        children: [
-          { index: true, element: <LiquidacaoListPage /> },
-          { path: 'nova', element: <LiquidacaoFormPage /> },
-          { path: ':id', element: <LiquidacaoDetailPage /> },
-        ],
-      },
-      {
         path: 'obras',
         children: [
           { index: true, element: <ObraListPage /> },
@@ -172,7 +156,6 @@ export const router = createBrowserRouter([
           { index: true, element: <FaturaListPage /> },
           { path: 'fechar-ciclo', element: <FaturaFecharCicloPage /> },
           { path: ':id', element: <FaturaDetailPage /> },
-          { path: ':id/pagar', element: <FaturaPagarPage /> },
         ],
       },
       {
@@ -191,14 +174,6 @@ export const router = createBrowserRouter([
       },
       // Só leitura — sem rota de criar/editar (Balanço não tem entidade própria).
       { path: 'balanco', element: <BalancoPage /> },
-      {
-        // Sem `:id/editar` — Ajuste Financeiro é imutável desde a criação (D13).
-        path: 'ajustes-financeiros',
-        children: [
-          { index: true, element: <AjusteFinanceiroListPage /> },
-          { path: 'novo', element: <AjusteFinanceiroFormPage /> },
-        ],
-      },
     ],
   },
 ])

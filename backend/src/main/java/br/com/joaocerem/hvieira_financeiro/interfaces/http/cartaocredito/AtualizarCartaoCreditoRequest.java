@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
  */
 public record AtualizarCartaoCreditoRequest(
         @NotBlank(message = "banco é obrigatório") String banco,
-        @NotBlank(message = "apelido é obrigatório") String apelido,
         @NotNull(message = "diaFechamento é obrigatório") Integer diaFechamento,
         @NotNull(message = "diaVencimento é obrigatório") Integer diaVencimento
 ) {

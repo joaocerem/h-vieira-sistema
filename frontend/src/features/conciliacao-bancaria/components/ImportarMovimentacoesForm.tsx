@@ -7,6 +7,7 @@ import { CurrencyInput } from '@/shared/components/form/CurrencyInput'
 import { FormField } from '@/shared/components/form/FormField'
 import { SelectField } from '@/shared/components/form/SelectField'
 import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 
 // Campo monetário via `CurrencyInput`/`Controller` (`shared/components/form/CurrencyInput.tsx`)
 // com `allowNegative` — diferente de Lançamento/Liquidação, o sinal é significativo aqui
@@ -27,13 +28,12 @@ const schema = z.object({
   itens: z.array(itemSchema).min(1, 'Informe ao menos um item para importar'),
 })
 
-// `z.output`, não `z.infer` — mesmo motivo de `LiquidacaoForm.tsx`/`LancamentoForm.tsx`.
+// `z.output`, não `z.infer` — mesmo motivo de `LancamentoForm.tsx`.
 export type ImportarMovimentacoesFormValues = z.output<typeof schema>
 
 /**
  * Lote de importação de extrato — Movimentação Bancária nunca é digitada livremente como um
- * fato isolado (`docs/domain-model/12-movimentacao-bancaria.md`, Seção 4), sempre em lote;
- * mesmo padrão de array dinâmico já usado para `aplicacoes` em `LiquidacaoForm.tsx`.
+ * fato isolado (`docs/domain-model/12-movimentacao-bancaria.md`, Seção 4), sempre em lote.
  */
 export function ImportarMovimentacoesForm({
   onSubmit,
@@ -43,6 +43,11 @@ export function ImportarMovimentacoesForm({
   isSubmitting: boolean
 }) {
   const { data: contasBancarias, isLoading: isLoadingContasBancarias } = useContaBancariaOptions()
+  const { data: empresas } = useEmpresaOptions()
+
+  function nomeDaEmpresa(empresaId: string) {
+    return empresas?.find((empresa) => empresa.id === empresaId)?.nome ?? '—'
+  }
 
   const form = useForm<z.input<typeof schema>, unknown, ImportarMovimentacoesFormValues>({
     resolver: zodResolver(schema),
@@ -62,7 +67,7 @@ export function ImportarMovimentacoesForm({
         placeholder={isLoadingContasBancarias ? 'Carregando...' : 'Selecione a conta bancária'}
         options={(contasBancarias ?? []).map((conta) => ({
           value: conta.id,
-          label: `${conta.banco} — ${conta.apelido}`,
+          label: `${nomeDaEmpresa(conta.empresaId)} — ${conta.banco}`,
         }))}
         error={form.formState.errors.contaBancariaId?.message}
         disabled={isLoadingContasBancarias}

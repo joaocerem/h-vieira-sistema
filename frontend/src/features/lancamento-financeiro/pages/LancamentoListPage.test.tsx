@@ -40,7 +40,7 @@ describe('LancamentoListPage', () => {
         vencimento: '2026-08-10',
         situacaoAdministrativa: 'Ativo',
         origem: 'Manual',
-        statusFinanceiro: 'Aberto',
+        statusFinanceiro: 'Não Conciliado',
         descricao: null,
         documento: null,
       },
@@ -54,11 +54,11 @@ describe('LancamentoListPage', () => {
 
     expect(await screen.findByText('Combustível')).toBeInTheDocument()
     expect(screen.getByText('10/08/2026')).toBeInTheDocument()
-    expect(screen.getByText('Aberto')).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: 'Não Conciliado' })).toBeInTheDocument()
     expect(screen.getByText(/R\$\s*150,50/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /ajustes/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /editar/i })).toHaveAttribute(
       'href',
-      '/ajustes-financeiros?lancamentoOriginalId=1',
+      '/lancamentos-financeiros/1/editar',
     )
   })
 

@@ -1,10 +1,6 @@
 import { sharedQueryKeys } from '@/shared/queryKeys'
 
-/**
- * Reusa `sharedQueryKeys.movimentacoesBancarias` — a mesma lista é invalidada por
- * `features/liquidacao-financeira/hooks/useCriarLiquidacao.ts`, já que criar uma Liquidação
- * gera automaticamente uma Movimentação Bancária (mesma transação no backend).
- */
+/** Reusa `sharedQueryKeys.movimentacoesBancarias` como fonte única da chave. */
 export const movimentacaoBancariaKeys = {
   all: sharedQueryKeys.movimentacoesBancarias,
   list: (contaBancariaId?: string) =>

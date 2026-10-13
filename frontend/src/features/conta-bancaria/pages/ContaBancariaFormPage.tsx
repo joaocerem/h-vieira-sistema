@@ -27,7 +27,7 @@ export function ContaBancariaFormPage() {
     if (isEdicao && id) {
       // `empresaId` não existe em `AtualizarContaBancariaRequest` — nunca enviado na edição.
       atualizar.mutate(
-        { id, values: { banco: values.banco, apelido: values.apelido } },
+        { id, values: { banco: values.banco } },
         {
           onError,
           onSuccess: () => {
@@ -40,7 +40,7 @@ export function ContaBancariaFormPage() {
     }
 
     criar.mutate(
-      { empresaId: values.empresaId as string, banco: values.banco, apelido: values.apelido },
+      { empresaId: values.empresaId as string, banco: values.banco },
       {
         onError,
         onSuccess: () => {
@@ -70,7 +70,7 @@ export function ContaBancariaFormPage() {
         modo={isEdicao ? 'editar' : 'criar'}
         defaultValues={
           contaBancaria
-            ? { empresaId: undefined, banco: contaBancaria.banco, apelido: contaBancaria.apelido }
+            ? { empresaId: undefined, banco: contaBancaria.banco }
             : undefined
         }
         onSubmit={handleSubmit}

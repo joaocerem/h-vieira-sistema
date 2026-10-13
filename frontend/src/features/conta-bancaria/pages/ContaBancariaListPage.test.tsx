@@ -26,7 +26,7 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('ContaBancariaListPage', () => {
   it('resolve o nome da empresa a partir do empresaId', async () => {
     vi.mocked(contaBancariaApi.listar).mockResolvedValueOnce([
-      { id: '1', empresaId: 'e1', banco: 'Itaú', apelido: 'Conta Movimento' },
+      { id: '1', empresaId: 'e1', banco: 'Itaú' },
     ])
     vi.mocked(useEmpresaOptions).mockReturnValue({
       data: [{ id: 'e1', nome: 'H Vieira Terraplanagem' }],

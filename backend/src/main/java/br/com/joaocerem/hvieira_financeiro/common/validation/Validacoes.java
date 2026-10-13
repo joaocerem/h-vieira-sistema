@@ -7,8 +7,7 @@ import java.math.BigDecimal;
 /**
  * Validações de negócio reaproveitadas por múltiplos Services (achado M2 da auditoria arquitetural).
  * Sem alteração de regra — mesma lógica que já existia duplicada em `LancamentoFinanceiroService`,
- * `LiquidacaoFinanceiraService`, `CompraCartaoService`, `RateioDespesaService`,
- * `AjusteFinanceiroService` e `FaturaService`, extraída para um único lugar.
+ * `CompraCartaoService`, `RateioDespesaService` e `FaturaService`, extraída para um único lugar.
  */
 public final class Validacoes {
 

@@ -8,7 +8,6 @@ import br.com.joaocerem.hvieira_financeiro.domain.conciliacaobancaria.Movimentac
 import br.com.joaocerem.hvieira_financeiro.domain.conciliacaobancaria.VinculoConciliacao;
 import br.com.joaocerem.hvieira_financeiro.domain.conciliacaobancaria.VinculoConciliacaoRepository;
 import br.com.joaocerem.hvieira_financeiro.domain.contabancaria.ContaBancaria;
-import br.com.joaocerem.hvieira_financeiro.domain.liquidacaofinanceira.LiquidacaoFinanceira;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,8 +21,9 @@ import java.util.UUID;
  *
  * Sem `criar` livre: "nunca digitada livremente pelo usuário como um fato novo" (Seção 4 do documento de
  * domínio) — só nasce por `importar` (lote de extrato, upload manual — T5, `docs/pendencias.md`, cobre a
- * necessidade hoje) ou `gerarAPartirDeLiquidacao` (chamada por `LiquidacaoFinanceiraService`, nunca
- * exposta via HTTP). Toda Movimentação criada por qualquer um dos dois caminhos ganha, na mesma
+ * necessidade hoje). A partir da Sprint 3 (rodada de evolução operacional) este é o único caminho de
+ * criação — `gerarAPartirDeLiquidacao` foi removido junto com Liquidação Financeira (a única
+ * confirmação válida passou a ser a conciliação bancária). Toda Movimentação criada ganha, na mesma
  * transação, o Vínculo Conciliação obrigatório (Seção 4 de `14-vinculo-conciliacao.md`: "gerada
  * automaticamente ... para toda Movimentação Bancária que existir").
  */
@@ -67,30 +67,6 @@ public class MovimentacaoBancariaService {
                     new MovimentacaoBancaria(contaBancaria, item.data(), item.descricao(), item.valor())));
         }
         return importadas;
-    }
-
-    /**
-     * Segundo caminho de criação previsto no documento de domínio: "gerada automaticamente ao registrar
-     * uma Liquidação". Chamada por `LiquidacaoFinanceiraService#criar`, na mesma transação. A
-     * correspondência com a Liquidação de origem já é certa por construção — o Vínculo Conciliação nasce
-     * `Confirmado` diretamente, sem passar por `Sugerido` (que é para candidatas encontradas por
-     * matching, não para este caso).
-     *
-     * Convenção de sinal (fora do escopo conceitual — Seção 2 de `12-movimentacao-bancaria.md`):
-     * Pagamento é saída (valor negativo), Recebimento é entrada (valor positivo).
-     */
-    public MovimentacaoBancaria gerarAPartirDeLiquidacao(LiquidacaoFinanceira liquidacao) {
-        var valor = "Pagamento".equals(liquidacao.getTipo()) ? liquidacao.getValor().negate() : liquidacao.getValor();
-        String descricao = "Liquidação Financeira (" + liquidacao.getTipo() + ") — " + liquidacao.getId();
-        MovimentacaoBancaria movimentacao = new MovimentacaoBancaria(
-                liquidacao.getContaBancaria(), liquidacao.getDataEfetiva(), descricao, valor);
-        movimentacao = repository.save(movimentacao);
-
-        VinculoConciliacao vinculo = new VinculoConciliacao(movimentacao);
-        vinculo.confirmarDiretamente(liquidacao);
-        vinculoConciliacaoRepository.save(vinculo);
-
-        return movimentacao;
     }
 
     public MovimentacaoBancaria reclassificar(UUID id, String novaClassificacao) {

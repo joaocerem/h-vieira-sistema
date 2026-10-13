@@ -6,8 +6,8 @@ import { vinculoConciliacaoKeys } from './queryKeys'
 export function useVincularManualmente() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, liquidacaoFinanceiraId }: { id: string; liquidacaoFinanceiraId: string }) =>
-      vinculoConciliacaoApi.vincularManualmente(id, liquidacaoFinanceiraId),
+    mutationFn: ({ id, lancamentoFinanceiroIds }: { id: string; lancamentoFinanceiroIds: string[] }) =>
+      vinculoConciliacaoApi.vincularManualmente(id, lancamentoFinanceiroIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vinculoConciliacaoKeys.all })
     },

@@ -2,16 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { VinculoConciliacaoActions } from './VinculoConciliacaoActions'
-import { useLiquidacaoOptions } from '@/shared/hooks/useLiquidacaoOptions'
+import { useLancamentoOptions } from '@/shared/hooks/useLancamentoOptions'
 import type { VinculoConciliacao } from '../types'
 
-vi.mock('@/shared/hooks/useLiquidacaoOptions', () => ({ useLiquidacaoOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useLancamentoOptions', () => ({ useLancamentoOptions: vi.fn() }))
 
 function baseVinculo(overrides: Partial<VinculoConciliacao> = {}): VinculoConciliacao {
   return {
     id: 'v1',
     movimentacaoBancariaId: 'm1',
-    liquidacaoFinanceiraId: null,
+    lancamentosFinanceirosIds: [],
     estadoConciliacao: 'Não Vinculado',
     ...overrides,
   }
@@ -19,16 +19,16 @@ function baseVinculo(overrides: Partial<VinculoConciliacao> = {}): VinculoConcil
 
 describe('VinculoConciliacaoActions', () => {
   beforeEach(() => {
-    vi.mocked(useLiquidacaoOptions).mockReturnValue({
+    vi.mocked(useLancamentoOptions).mockReturnValue({
       data: [],
       isLoading: false,
-    } as unknown as ReturnType<typeof useLiquidacaoOptions>)
+    } as unknown as ReturnType<typeof useLancamentoOptions>)
   })
 
   it('não mostra nenhum botão quando o estado é Confirmado (estado final)', () => {
     render(
       <VinculoConciliacaoActions
-        vinculo={baseVinculo({ estadoConciliacao: 'Confirmado', liquidacaoFinanceiraId: 'l1' })}
+        vinculo={baseVinculo({ estadoConciliacao: 'Confirmado', lancamentosFinanceirosIds: ['l1'] })}
         onConfirmar={vi.fn()}
         onMarcarDivergente={vi.fn()}
         onMarcarSemCorrespondencia={vi.fn()}
@@ -61,7 +61,7 @@ describe('VinculoConciliacaoActions', () => {
   it('mostra "Confirmar", "Marcar divergente" e "Vincular manualmente" quando Sugerido', () => {
     render(
       <VinculoConciliacaoActions
-        vinculo={baseVinculo({ estadoConciliacao: 'Sugerido', liquidacaoFinanceiraId: 'l1' })}
+        vinculo={baseVinculo({ estadoConciliacao: 'Sugerido', lancamentosFinanceirosIds: ['l1'] })}
         onConfirmar={vi.fn()}
         onMarcarDivergente={vi.fn()}
         onMarcarSemCorrespondencia={vi.fn()}
@@ -79,7 +79,7 @@ describe('VinculoConciliacaoActions', () => {
   it('mostra só "Marcar divergente" e "Vincular manualmente" quando já Divergente (não pode confirmar nem marcar sem correspondência)', () => {
     render(
       <VinculoConciliacaoActions
-        vinculo={baseVinculo({ estadoConciliacao: 'Divergente', liquidacaoFinanceiraId: 'l1' })}
+        vinculo={baseVinculo({ estadoConciliacao: 'Divergente', lancamentosFinanceirosIds: ['l1'] })}
         onConfirmar={vi.fn()}
         onMarcarDivergente={vi.fn()}
         onMarcarSemCorrespondencia={vi.fn()}
@@ -99,7 +99,7 @@ describe('VinculoConciliacaoActions', () => {
     const onConfirmar = vi.fn()
     render(
       <VinculoConciliacaoActions
-        vinculo={baseVinculo({ estadoConciliacao: 'Sugerido', liquidacaoFinanceiraId: 'l1' })}
+        vinculo={baseVinculo({ estadoConciliacao: 'Sugerido', lancamentosFinanceirosIds: ['l1'] })}
         onConfirmar={onConfirmar}
         onMarcarDivergente={vi.fn()}
         onMarcarSemCorrespondencia={vi.fn()}
@@ -113,11 +113,14 @@ describe('VinculoConciliacaoActions', () => {
     expect(onConfirmar).toHaveBeenCalledOnce()
   })
 
-  it('abre o seletor de Liquidação e chama onVincularManualmente com o id escolhido', async () => {
-    vi.mocked(useLiquidacaoOptions).mockReturnValue({
-      data: [{ id: 'l1', tipo: 'Pagamento', dataEfetiva: '2026-08-01', valor: 500, contaBancariaId: 'cb1' }],
+  it('abre a lista de Lançamentos e chama onVincularManualmente com os ids marcados', async () => {
+    vi.mocked(useLancamentoOptions).mockReturnValue({
+      data: [
+        { id: 'l1', tipo: 'Despesa', valor: 500, vencimento: '2026-08-01', situacaoAdministrativa: 'Ativo', statusFinanceiro: 'Não Conciliado' },
+        { id: 'l2', tipo: 'Despesa', valor: 300, vencimento: '2026-08-02', situacaoAdministrativa: 'Ativo', statusFinanceiro: 'Não Conciliado' },
+      ],
       isLoading: false,
-    } as unknown as ReturnType<typeof useLiquidacaoOptions>)
+    } as unknown as ReturnType<typeof useLancamentoOptions>)
 
     const user = userEvent.setup()
     const onVincularManualmente = vi.fn()
@@ -133,9 +136,11 @@ describe('VinculoConciliacaoActions', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /vincular manualmente/i }))
-    await user.selectOptions(screen.getByRole('combobox'), 'l1')
+    const checkboxes = screen.getAllByRole('checkbox')
+    await user.click(checkboxes[0])
+    await user.click(checkboxes[1])
     await user.click(screen.getByRole('button', { name: /^vincular$/i }))
 
-    expect(onVincularManualmente).toHaveBeenCalledWith('l1')
+    expect(onVincularManualmente).toHaveBeenCalledWith(['l1', 'l2'])
   })
 })

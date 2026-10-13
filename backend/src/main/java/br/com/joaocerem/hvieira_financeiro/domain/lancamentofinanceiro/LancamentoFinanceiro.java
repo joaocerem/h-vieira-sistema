@@ -209,10 +209,11 @@ public class LancamentoFinanceiro {
     }
 
     /**
-     * Usado por `LiquidacaoFinanceiraService`, `RateioDespesaService` e `AjusteFinanceiroService`
-     * (achado A1 da auditoria arquitetural) — um Lançamento Cancelado significa que ele foi invalidado
-     * antes de produzir qualquer efeito financeiro (`09-lancamento-financeiro.md`, Seção 4); nenhum
-     * novo efeito (Aplicação de Liquidação, Rateio, Ajuste Financeiro) pode ser vinculado a ele depois.
+     * Usado por `RateioDespesaService` (achado A1 da auditoria arquitetural) — um Lançamento
+     * Cancelado significa que ele foi invalidado antes de produzir qualquer efeito financeiro
+     * (`09-lancamento-financeiro.md`, Seção 4); nenhum novo efeito (Rateio) pode ser vinculado a
+     * ele depois. Também usado por `VinculoConciliacaoService#saoCompativeis` (Sprint 3 — rodada
+     * de evolução operacional): um Lançamento Cancelado nunca é compatível com uma Movimentação.
      */
     public boolean estaCancelado() {
         return "Cancelado".equals(situacaoAdministrativa);

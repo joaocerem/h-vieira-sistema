@@ -1,12 +1,13 @@
 /**
  * Espelha `ContaBancariaResponse` (backend). Sem campo de saldo — sempre calculado a partir de
- * Movimentação Bancária, nunca persistido (`docs/domain-model/08-conta-bancaria.md`).
+ * Movimentação Bancária, nunca persistido (`docs/domain-model/08-conta-bancaria.md`). Sem
+ * `apelido` (decisão de negócio, Sprint 3 — rodada de evolução operacional): identificação
+ * passa a ser Empresa + Banco.
  */
 export interface ContaBancaria {
   id: string
   empresaId: string
   banco: string
-  apelido: string
 }
 
 /**
@@ -17,10 +18,8 @@ export interface ContaBancaria {
 export interface ContaBancariaCriarValues {
   empresaId: string
   banco: string
-  apelido: string
 }
 
 export interface ContaBancariaAtualizarValues {
   banco: string
-  apelido: string
 }

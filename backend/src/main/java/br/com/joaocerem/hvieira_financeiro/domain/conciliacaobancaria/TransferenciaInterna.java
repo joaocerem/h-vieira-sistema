@@ -18,9 +18,8 @@ import java.util.UUID;
  * TRANSFERÊNCIA_INTERNA — vincula duas Movimentações Bancárias que são, juntas, uma transferência entre
  * contas próprias do grupo. Ver `docs/domain-model/13-transferencia-interna.md`.
  *
- * Sem setters: "Regras de alteração: não definidas" no documento de domínio (Seção 4) — tratada com a
- * mesma cautela já aplicada a `LiquidacaoFinanceira`/`AplicacaoDeLiquidacao` (princípio 2: não expor um
- * caminho de edição que não tem confirmação de negócio).
+ * Sem setters: "Regras de alteração: não definidas" no documento de domínio (Seção 4) — princípio 2:
+ * não expor um caminho de edição que não tem confirmação de negócio.
  */
 @Entity
 @Table(name = "transferencias_internas")

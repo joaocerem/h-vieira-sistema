@@ -51,13 +51,13 @@ class ParcelaServiceTest {
 
     private CartaoCredito cartao(int diaFechamento, int diaVencimento) {
         Empresa empresa = new Empresa("H Vieira");
-        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil", "Conta Principal");
-        return new CartaoCredito(conta, "Nubank", "Cartão PJ", diaFechamento, diaVencimento);
+        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil");
+        return new CartaoCredito(conta, "Nubank", diaFechamento, diaVencimento);
     }
 
     private ContratoFinanceiro contratoFinanciamento() {
         Empresa empresa = new Empresa("H Vieira");
-        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil", "Conta Principal");
+        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil");
         Fornecedor banco = new Fornecedor("Banco do Brasil S.A.");
         return new ContratoFinanceiro("Financiamento", empresa, conta, banco, new BigDecimal("300.00"), 3,
                 LocalDate.of(2026, 2, 15), new BigDecimal("1.5"), null, null, null);
@@ -65,7 +65,7 @@ class ParcelaServiceTest {
 
     private ContratoFinanceiro contratoConsorcio(boolean contemplado, Veiculo veiculo) {
         Empresa empresa = new Empresa("H Vieira");
-        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil", "Conta Principal");
+        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil");
         Fornecedor administradora = new Fornecedor("Consórcio Nacional");
         ContratoFinanceiro contrato = new ContratoFinanceiro("Consórcio", empresa, conta, administradora,
                 new BigDecimal("300.00"), 3, LocalDate.of(2026, 2, 15), null, "Grupo 10 Cota 5", false, null);

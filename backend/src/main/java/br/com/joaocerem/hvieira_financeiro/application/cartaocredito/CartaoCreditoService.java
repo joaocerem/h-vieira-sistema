@@ -28,15 +28,14 @@ public class CartaoCreditoService {
         this.contaBancariaService = contaBancariaService;
     }
 
-    public CartaoCredito criar(UUID contaBancariaId, String banco, String apelido, Integer diaFechamento, Integer diaVencimento) {
+    public CartaoCredito criar(UUID contaBancariaId, String banco, Integer diaFechamento, Integer diaVencimento) {
         ContaBancaria contaBancaria = contaBancariaService.buscarPorId(contaBancariaId);
-        return repository.save(new CartaoCredito(contaBancaria, banco, apelido, diaFechamento, diaVencimento));
+        return repository.save(new CartaoCredito(contaBancaria, banco, diaFechamento, diaVencimento));
     }
 
-    public CartaoCredito atualizar(UUID id, String banco, String apelido, Integer diaFechamento, Integer diaVencimento) {
+    public CartaoCredito atualizar(UUID id, String banco, Integer diaFechamento, Integer diaVencimento) {
         CartaoCredito cartao = buscarPorId(id);
         cartao.setBanco(banco);
-        cartao.setApelido(apelido);
         cartao.setDiaFechamento(diaFechamento);
         cartao.setDiaVencimento(diaVencimento);
         return repository.save(cartao);

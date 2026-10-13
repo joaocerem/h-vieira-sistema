@@ -34,11 +34,11 @@ class CartaoCreditoServiceTest {
     void criarDeveBuscarContaBancariaEVincularNoCartao() {
         service = new CartaoCreditoService(repository, contaBancariaService);
         UUID contaBancariaId = UUID.randomUUID();
-        ContaBancaria conta = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil", "Conta Principal");
+        ContaBancaria conta = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil");
         when(contaBancariaService.buscarPorId(contaBancariaId)).thenReturn(conta);
         when(repository.save(any(CartaoCredito.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CartaoCredito cartao = service.criar(contaBancariaId, "Nubank", "Cartão PJ", 10, 20);
+        CartaoCredito cartao = service.criar(contaBancariaId, "Nubank", 10, 20);
 
         assertThat(cartao.getContaBancaria()).isSameAs(conta);
         assertThat(cartao.getDiaFechamento()).isEqualTo(10);
@@ -52,7 +52,7 @@ class CartaoCreditoServiceTest {
         when(contaBancariaService.buscarPorId(contaBancariaId))
                 .thenThrow(new ResourceNotFoundException("Conta Bancária não encontrada: " + contaBancariaId));
 
-        assertThatThrownBy(() -> service.criar(contaBancariaId, "Nubank", "Cartão PJ", 10, 20))
+        assertThatThrownBy(() -> service.criar(contaBancariaId, "Nubank", 10, 20))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -70,12 +70,12 @@ class CartaoCreditoServiceTest {
     void atualizarDeveAlterarCamposEditaveisSemAlterarContaBancaria() {
         service = new CartaoCreditoService(repository, contaBancariaService);
         UUID id = UUID.randomUUID();
-        ContaBancaria conta = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil", "Conta Principal");
-        CartaoCredito existente = new CartaoCredito(conta, "Banco Antigo", "Apelido Antigo", 5, 15);
+        ContaBancaria conta = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil");
+        CartaoCredito existente = new CartaoCredito(conta, "Banco Antigo", 5, 15);
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(repository.save(any(CartaoCredito.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CartaoCredito atualizado = service.atualizar(id, "Banco Novo", "Apelido Novo", 12, 22);
+        CartaoCredito atualizado = service.atualizar(id, "Banco Novo", 12, 22);
 
         assertThat(atualizado.getBanco()).isEqualTo("Banco Novo");
         assertThat(atualizado.getDiaFechamento()).isEqualTo(12);

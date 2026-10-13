@@ -43,7 +43,7 @@ export function BalancoPage() {
         <>
           <section className="grid gap-2">
             <h2 className="text-sm font-medium text-muted-foreground">
-              Realizado — fração já coberta por Liquidação/Aplicação
+              Realizado — Lançamentos conciliados na Conciliação Bancária
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <ResultadoCard label="Receitas realizadas" valor={balanco.receitasRealizadas} />
@@ -54,7 +54,7 @@ export function BalancoPage() {
 
           <section className="grid gap-2">
             <h2 className="text-sm font-medium text-muted-foreground">
-              Projetado — Lançamentos Aberto + Parcial + Pago (exceto Cancelado)
+              Projetado — todos os Lançamentos Ativos, conciliados ou não
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <ResultadoCard label="Receitas projetadas" valor={balanco.receitasProjetadas} />

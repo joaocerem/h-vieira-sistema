@@ -31,7 +31,6 @@ export function CartaoCreditoFormPage() {
           id,
           values: {
             banco: values.banco,
-            apelido: values.apelido,
             diaFechamento: values.diaFechamento,
             diaVencimento: values.diaVencimento,
           },
@@ -51,7 +50,6 @@ export function CartaoCreditoFormPage() {
       {
         contaBancariaId: values.contaBancariaId as string,
         banco: values.banco,
-        apelido: values.apelido,
         diaFechamento: values.diaFechamento,
         diaVencimento: values.diaVencimento,
       },
@@ -87,7 +85,6 @@ export function CartaoCreditoFormPage() {
             ? {
                 contaBancariaId: undefined,
                 banco: cartao.banco,
-                apelido: cartao.apelido,
                 diaFechamento: cartao.diaFechamento,
                 diaVencimento: cartao.diaVencimento,
               }

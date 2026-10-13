@@ -23,7 +23,7 @@ public class CartaoCreditoController {
     @PostMapping
     public ResponseEntity<CartaoCreditoResponse> criar(@Valid @RequestBody CriarCartaoCreditoRequest request) {
         CartaoCredito cartao = service.criar(
-                request.contaBancariaId(), request.banco(), request.apelido(), request.diaFechamento(), request.diaVencimento());
+                request.contaBancariaId(), request.banco(), request.diaFechamento(), request.diaVencimento());
         CartaoCreditoResponse response = CartaoCreditoMapper.toResponse(cartao);
         return ResponseEntity.created(URI.create("/api/cartoes-credito/" + cartao.getId())).body(response);
     }
@@ -41,6 +41,6 @@ public class CartaoCreditoController {
     @PutMapping("/{id}")
     public CartaoCreditoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody AtualizarCartaoCreditoRequest request) {
         return CartaoCreditoMapper.toResponse(
-                service.atualizar(id, request.banco(), request.apelido(), request.diaFechamento(), request.diaVencimento()));
+                service.atualizar(id, request.banco(), request.diaFechamento(), request.diaVencimento()));
     }
 }

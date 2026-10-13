@@ -12,10 +12,14 @@ import { useCategoriaOptions } from '@/shared/hooks/useCategoriaOptions'
 import { formatCurrency, formatDate } from '@/shared/lib/formatters'
 import type { LancamentoFinanceiro } from '../types'
 
+/**
+ * A partir da Sprint 3 (rodada de evolução operacional): binário — sem estado intermediário
+ * ("Aberto"/"Parcialmente Pago-Recebido" não existem mais). `statusFinanceiro` continua
+ * calculado só pelo backend (`LancamentoFinanceiroService#calcularStatusFinanceiro`).
+ */
 const STATUS_FINANCEIRO_VARIANT = {
-  Aberto: 'secondary',
-  'Parcialmente Pago-Recebido': 'outline',
-  'Pago-Recebido': 'default',
+  'Não Conciliado': 'secondary',
+  Conciliado: 'default',
 } as const
 
 export function LancamentoTable({ lancamentos }: { lancamentos: LancamentoFinanceiro[] }) {
@@ -65,12 +69,6 @@ export function LancamentoTable({ lancamentos }: { lancamentos: LancamentoFinanc
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-3">
-                <Link
-                  to={`/ajustes-financeiros?lancamentoOriginalId=${lancamento.id}`}
-                  className="text-sm text-primary underline-offset-4 hover:underline"
-                >
-                  Ajustes
-                </Link>
                 <Link
                   to={`/lancamentos-financeiros/${lancamento.id}/editar`}
                   className="text-sm text-primary underline-offset-4 hover:underline"

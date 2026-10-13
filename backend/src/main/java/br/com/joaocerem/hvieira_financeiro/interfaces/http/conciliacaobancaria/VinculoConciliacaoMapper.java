@@ -1,6 +1,7 @@
 package br.com.joaocerem.hvieira_financeiro.interfaces.http.conciliacaobancaria;
 
 import br.com.joaocerem.hvieira_financeiro.domain.conciliacaobancaria.VinculoConciliacao;
+import br.com.joaocerem.hvieira_financeiro.domain.lancamentofinanceiro.LancamentoFinanceiro;
 
 public final class VinculoConciliacaoMapper {
 
@@ -11,7 +12,7 @@ public final class VinculoConciliacaoMapper {
         return new VinculoConciliacaoResponse(
                 vinculo.getId(),
                 vinculo.getMovimentacaoBancaria().getId(),
-                vinculo.getLiquidacaoFinanceira() != null ? vinculo.getLiquidacaoFinanceira().getId() : null,
+                vinculo.getLancamentosFinanceiros().stream().map(LancamentoFinanceiro::getId).toList(),
                 vinculo.getEstadoConciliacao()
         );
     }

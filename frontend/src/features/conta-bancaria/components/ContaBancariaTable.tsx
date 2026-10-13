@@ -31,7 +31,6 @@ export function ContaBancariaTable({ contasBancarias }: { contasBancarias: Conta
         <TableRow>
           <TableHead>Empresa</TableHead>
           <TableHead>Banco</TableHead>
-          <TableHead>Apelido</TableHead>
           <TableHead className="w-24 text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
@@ -40,7 +39,6 @@ export function ContaBancariaTable({ contasBancarias }: { contasBancarias: Conta
           <TableRow key={conta.id}>
             <TableCell>{nomeDaEmpresa(conta.empresaId)}</TableCell>
             <TableCell>{conta.banco}</TableCell>
-            <TableCell>{conta.apelido}</TableCell>
             <TableCell className="text-right">
               <Link
                 to={`/contas-bancarias/${conta.id}/editar`}

@@ -28,15 +28,14 @@ public class ContaBancariaService {
         this.empresaService = empresaService;
     }
 
-    public ContaBancaria criar(UUID empresaId, String banco, String apelido) {
+    public ContaBancaria criar(UUID empresaId, String banco) {
         Empresa empresa = empresaService.buscarPorId(empresaId);
-        return repository.save(new ContaBancaria(empresa, banco, apelido));
+        return repository.save(new ContaBancaria(empresa, banco));
     }
 
-    public ContaBancaria atualizar(UUID id, String banco, String apelido) {
+    public ContaBancaria atualizar(UUID id, String banco) {
         ContaBancaria contaBancaria = buscarPorId(id);
         contaBancaria.setBanco(banco);
-        contaBancaria.setApelido(apelido);
         return repository.save(contaBancaria);
     }
 

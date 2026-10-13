@@ -53,7 +53,7 @@ class ContratoFinanceiroServiceTest {
     private void iniciar() {
         service = new ContratoFinanceiroService(repository, empresaService, contaBancariaService, fornecedorService, veiculoService, parcelaService);
         empresa = new Empresa("H Vieira");
-        contaBancaria = new ContaBancaria(empresa, "Banco do Brasil", "Conta Principal");
+        contaBancaria = new ContaBancaria(empresa, "Banco do Brasil");
         fornecedor = new Fornecedor("Banco do Brasil S.A.");
     }
 

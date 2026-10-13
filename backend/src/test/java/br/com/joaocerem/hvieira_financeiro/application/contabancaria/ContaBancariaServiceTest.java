@@ -37,7 +37,7 @@ class ContaBancariaServiceTest {
         when(empresaService.buscarPorId(empresaId)).thenReturn(empresa);
         when(repository.save(any(ContaBancaria.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ContaBancaria conta = service.criar(empresaId, "Banco do Brasil", "Conta Principal");
+        ContaBancaria conta = service.criar(empresaId, "Banco do Brasil");
 
         assertThat(conta.getEmpresa()).isSameAs(empresa);
         assertThat(conta.getBanco()).isEqualTo("Banco do Brasil");
@@ -49,7 +49,7 @@ class ContaBancariaServiceTest {
         UUID empresaId = UUID.randomUUID();
         when(empresaService.buscarPorId(empresaId)).thenThrow(new ResourceNotFoundException("Empresa não encontrada: " + empresaId));
 
-        assertThatThrownBy(() -> service.criar(empresaId, "Banco", "Apelido"))
+        assertThatThrownBy(() -> service.criar(empresaId, "Banco"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -64,18 +64,17 @@ class ContaBancariaServiceTest {
     }
 
     @Test
-    void atualizarDeveAlterarBancoEApelidoSemAlterarEmpresa() {
+    void atualizarDeveAlterarBancoSemAlterarEmpresa() {
         service = new ContaBancariaService(repository, empresaService);
         UUID id = UUID.randomUUID();
         Empresa empresa = new Empresa("H Vieira");
-        ContaBancaria existente = new ContaBancaria(empresa, "Banco Antigo", "Apelido Antigo");
+        ContaBancaria existente = new ContaBancaria(empresa, "Banco Antigo");
         when(repository.findById(id)).thenReturn(Optional.of(existente));
         when(repository.save(any(ContaBancaria.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ContaBancaria atualizada = service.atualizar(id, "Banco Novo", "Apelido Novo");
+        ContaBancaria atualizada = service.atualizar(id, "Banco Novo");
 
         assertThat(atualizada.getBanco()).isEqualTo("Banco Novo");
-        assertThat(atualizada.getApelido()).isEqualTo("Apelido Novo");
         assertThat(atualizada.getEmpresa()).isSameAs(empresa);
     }
 }

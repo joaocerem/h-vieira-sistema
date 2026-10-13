@@ -65,8 +65,8 @@ class CompraCartaoServiceTest {
 
     private CartaoCredito cartao() {
         Empresa empresa = new Empresa("H Vieira");
-        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil", "Conta Principal");
-        return new CartaoCredito(conta, "Nubank", "Cartão PJ", 20, 5);
+        ContaBancaria conta = new ContaBancaria(empresa, "Banco do Brasil");
+        return new CartaoCredito(conta, "Nubank", 20, 5);
     }
 
     @Test

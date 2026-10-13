@@ -8,10 +8,12 @@ import {
   TableRow,
 } from '@/shared/components/ui/table'
 import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 import type { CartaoCredito } from '../types'
 
 export function CartaoCreditoTable({ cartoes }: { cartoes: CartaoCredito[] }) {
   const { data: contasBancarias } = useContaBancariaOptions()
+  const { data: empresas } = useEmpresaOptions()
 
   if (cartoes.length === 0) {
     return (
@@ -19,16 +21,19 @@ export function CartaoCreditoTable({ cartoes }: { cartoes: CartaoCredito[] }) {
     )
   }
 
+  // Identificação vira Empresa + Banco (decisão de negócio, Sprint 3) — Empresa resolvida em
+  // duas etapas: `contaBancariaId` → Conta Bancária → `empresaId` → Empresa.
   function contaBancariaLabel(contaBancariaId: string) {
     const conta = contasBancarias?.find((c) => c.id === contaBancariaId)
-    return conta ? `${conta.banco} — ${conta.apelido}` : '—'
+    if (!conta) return '—'
+    const empresa = empresas?.find((e) => e.id === conta.empresaId)
+    return `${empresa?.nome ?? '—'} — ${conta.banco}`
   }
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Apelido</TableHead>
           <TableHead>Banco</TableHead>
           <TableHead>Conta bancária</TableHead>
           <TableHead>Fechamento</TableHead>
@@ -39,7 +44,6 @@ export function CartaoCreditoTable({ cartoes }: { cartoes: CartaoCredito[] }) {
       <TableBody>
         {cartoes.map((cartao) => (
           <TableRow key={cartao.id}>
-            <TableCell>{cartao.apelido}</TableCell>
             <TableCell>{cartao.banco}</TableCell>
             <TableCell>{contaBancariaLabel(cartao.contaBancariaId)}</TableCell>
             <TableCell>{cartao.diaFechamento}</TableCell>

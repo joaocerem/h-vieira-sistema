@@ -5,9 +5,8 @@ const BASE_PATH = '/api/transferencias-internas'
 
 /**
  * Espelha `TransferenciaInternaController`. Sem `atualizar` — "Regras de alteração: não
- * definidas" no documento de domínio (`13-transferencia-interna.md`, Seção 4); tratada com a
- * mesma cautela já aplicada a `LiquidacaoFinanceira` (sem expor edição sem confirmação de
- * negócio).
+ * definidas" no documento de domínio (`13-transferencia-interna.md`, Seção 4) — sem expor um
+ * caminho de edição que não tem confirmação de negócio.
  */
 export const transferenciaInternaApi = {
   listar: async (): Promise<TransferenciaInterna[]> => {

@@ -18,9 +18,10 @@ spring:
 
 hvieira:
   conciliacao:
-    # T6 (docs/pendencias.md) — tolerância de dias no matching automático de conciliação. Parâmetro
-    # operacional configurável, nunca uma constante fixa no código (ver ConciliacaoProperties).
-    tolerancia-dias-matching: 2
+    # T6 (docs/pendencias.md) — tolerância de dias no matching automático de conciliação e na
+    # recompatibilidade de um Vínculo já Confirmado (Sprint 3). Parâmetro operacional configurável,
+    # nunca uma constante fixa no código (ver ConciliacaoProperties).
+    tolerancia-dias-matching: 3
 
   cors:
     # Origens autorizadas a consumir a API via CORS (ver CorsProperties/SecurityConfig). Valor

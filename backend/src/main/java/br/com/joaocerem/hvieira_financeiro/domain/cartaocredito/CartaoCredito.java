@@ -23,6 +23,9 @@ import java.util.UUID;
  * marca essa faixa explicitamente como "inferência de bom senso, não confirmada textualmente" — e o
  * schema físico (`docs/modelagem-fisica/11-cartao-credito.md`) deliberadamente não tem CHECK por esse
  * motivo. Não adiciono validação de faixa aqui pela mesma razão (evita inventar regra de negócio).
+ *
+ * Sem `apelido` (decisão de negócio, Sprint 3 — rodada de evolução operacional): identificação
+ * passa a ser Empresa + Banco, sem apelido próprio.
  */
 @Entity
 @Table(name = "cartoes_credito")
@@ -39,9 +42,6 @@ public class CartaoCredito {
     @Column(name = "banco", nullable = false)
     private String banco;
 
-    @Column(name = "apelido", nullable = false)
-    private String apelido;
-
     @Column(name = "dia_fechamento", nullable = false)
     private Integer diaFechamento;
 
@@ -52,10 +52,9 @@ public class CartaoCredito {
         // exigido pelo JPA
     }
 
-    public CartaoCredito(ContaBancaria contaBancaria, String banco, String apelido, Integer diaFechamento, Integer diaVencimento) {
+    public CartaoCredito(ContaBancaria contaBancaria, String banco, Integer diaFechamento, Integer diaVencimento) {
         this.contaBancaria = contaBancaria;
         this.banco = banco;
-        this.apelido = apelido;
         this.diaFechamento = diaFechamento;
         this.diaVencimento = diaVencimento;
     }
@@ -74,14 +73,6 @@ public class CartaoCredito {
 
     public void setBanco(String banco) {
         this.banco = banco;
-    }
-
-    public String getApelido() {
-        return apelido;
-    }
-
-    public void setApelido(String apelido) {
-        this.apelido = apelido;
     }
 
     public Integer getDiaFechamento() {

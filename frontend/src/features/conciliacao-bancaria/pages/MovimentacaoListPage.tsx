@@ -5,6 +5,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { SelectField } from '@/shared/components/form/SelectField'
 import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 import { useMovimentacoes } from '../hooks/useMovimentacoes'
 import { useVinculosConciliacao } from '../hooks/useVinculosConciliacao'
 import { useReclassificarMovimentacao } from '../hooks/useReclassificarMovimentacao'
@@ -21,12 +22,12 @@ import { MovimentacaoBancariaTable } from '../components/MovimentacaoBancariaTab
  * 14-vinculo-conciliacao.md`, Seção 3: "toda Movimentação tem exatamente um Vínculo") — não é
  * uma tela artificial, é a forma real da relação. Sem filtro por conta no backend para Vínculo
  * (`VinculoConciliacaoController` só filtra por `estado`) — a lista completa de Vínculos é lida
- * e cruzada no cliente com as Movimentações já filtradas por conta, mesmo padrão de referência
- * já usado em `LiquidacaoDetailPage`.
+ * e cruzada no cliente com as Movimentações já filtradas por conta.
  */
 export function MovimentacaoListPage() {
   const [contaBancariaId, setContaBancariaId] = useState('')
   const { data: contasBancarias } = useContaBancariaOptions()
+  const { data: empresas } = useEmpresaOptions()
   const { data: movimentacoes, isLoading, isError } = useMovimentacoes(contaBancariaId || undefined)
   const { data: vinculos } = useVinculosConciliacao()
 
@@ -48,7 +49,10 @@ export function MovimentacaoListPage() {
     sugestaoAutomatica.mutate(undefined, {
       onSuccess: (resultado) => {
         toast.success(
-          `${resultado.processados} processada(s): ${resultado.sugeridos} sugerida(s), ${resultado.semCorrespondencia} sem correspondência.`,
+          `${resultado.processados} processada(s): ${resultado.sugeridos} sugerida(s), ${resultado.semCorrespondencia} sem correspondência` +
+            (resultado.comMultiplosCandidatos > 0
+              ? `, ${resultado.comMultiplosCandidatos} com múltiplos candidatos (resolva manualmente).`
+              : '.'),
         )
       },
     })
@@ -77,7 +81,7 @@ export function MovimentacaoListPage() {
         placeholder="Todas as contas"
         options={(contasBancarias ?? []).map((conta) => ({
           value: conta.id,
-          label: `${conta.banco} — ${conta.apelido}`,
+          label: `${empresas?.find((empresa) => empresa.id === conta.empresaId)?.nome ?? '—'} — ${conta.banco}`,
         }))}
         value={contaBancariaId}
         onChange={(event) => setContaBancariaId(event.target.value)}
@@ -106,8 +110,8 @@ export function MovimentacaoListPage() {
           onConfirmar={(id) => confirmar.mutate(id)}
           onMarcarDivergente={(id) => marcarDivergente.mutate(id)}
           onMarcarSemCorrespondencia={(id) => marcarSemCorrespondencia.mutate(id)}
-          onVincularManualmente={(id, liquidacaoFinanceiraId) =>
-            vincularManualmente.mutate({ id, liquidacaoFinanceiraId })
+          onVincularManualmente={(id, lancamentoFinanceiroIds) =>
+            vincularManualmente.mutate({ id, lancamentoFinanceiroIds })
           }
           isMutating={isMutating}
         />

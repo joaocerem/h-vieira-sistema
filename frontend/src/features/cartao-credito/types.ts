@@ -1,12 +1,13 @@
 /**
  * Espelha `CartaoCreditoResponse` (backend). Cadastro do cartão em si — não inclui Compra,
- * Parcela nem Fatura (módulo financeiro separado, fora desta etapa).
+ * Parcela nem Fatura (módulo financeiro separado, fora desta etapa). Sem `apelido` (decisão de
+ * negócio, Sprint 3 — rodada de evolução operacional): identificação passa a ser Empresa +
+ * Banco (Empresa resolvida via `contaBancariaId`, não é campo direto deste cadastro).
  */
 export interface CartaoCredito {
   id: string
   contaBancariaId: string
   banco: string
-  apelido: string
   diaFechamento: number
   diaVencimento: number
 }
@@ -15,14 +16,12 @@ export interface CartaoCredito {
 export interface CartaoCreditoCriarValues {
   contaBancariaId: string
   banco: string
-  apelido: string
   diaFechamento: number
   diaVencimento: number
 }
 
 export interface CartaoCreditoAtualizarValues {
   banco: string
-  apelido: string
   diaFechamento: number
   diaVencimento: number
 }

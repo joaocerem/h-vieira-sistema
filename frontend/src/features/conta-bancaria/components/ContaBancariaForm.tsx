@@ -21,7 +21,6 @@ function buildSchema(modo: 'criar' | 'editar') {
     empresaId:
       modo === 'criar' ? z.string().min(1, 'Empresa é obrigatória') : z.string().optional(),
     banco: z.string().trim().min(1, 'Banco é obrigatório'),
-    apelido: z.string().trim().min(1, 'Apelido é obrigatório'),
   })
 }
 
@@ -50,12 +49,12 @@ export function ContaBancariaForm({
 
   const form = useForm<ContaBancariaFormValues>({
     resolver: zodResolver(buildSchema(modo)),
-    defaultValues: defaultValues ?? { empresaId: '', banco: '', apelido: '' },
+    defaultValues: defaultValues ?? { empresaId: '', banco: '' },
   })
 
   useEffect(() => {
     serverFieldErrors?.forEach((fieldError) => {
-      if (fieldError.field === 'empresaId' || fieldError.field === 'banco' || fieldError.field === 'apelido') {
+      if (fieldError.field === 'empresaId' || fieldError.field === 'banco') {
         form.setError(fieldError.field, { type: 'server', message: fieldError.message })
       }
     })
@@ -77,10 +76,6 @@ export function ContaBancariaForm({
 
       <FormField id="banco" label="Banco" error={form.formState.errors.banco?.message}>
         <Input id="banco" autoFocus={modo === 'editar'} {...form.register('banco')} />
-      </FormField>
-
-      <FormField id="apelido" label="Apelido" error={form.formState.errors.apelido?.message}>
-        <Input id="apelido" placeholder="ex.: Conta Movimento" {...form.register('apelido')} />
       </FormField>
 
       <div className="flex gap-2">

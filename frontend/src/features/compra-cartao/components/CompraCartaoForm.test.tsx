@@ -4,12 +4,16 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CompraCartaoForm } from './CompraCartaoForm'
 import { useCartaoCreditoOptions } from '@/shared/hooks/useCartaoCreditoOptions'
+import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 import { useFornecedorOptions } from '@/shared/hooks/useFornecedorOptions'
 import { useCategoriaOptions } from '@/shared/hooks/useCategoriaOptions'
 import { useObraOptions } from '@/shared/hooks/useObraOptions'
 import { useVeiculoOptions } from '@/shared/hooks/useVeiculoOptions'
 
 vi.mock('@/shared/hooks/useCartaoCreditoOptions', () => ({ useCartaoCreditoOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useContaBancariaOptions', () => ({ useContaBancariaOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useEmpresaOptions', () => ({ useEmpresaOptions: vi.fn() }))
 vi.mock('@/shared/hooks/useFornecedorOptions', () => ({ useFornecedorOptions: vi.fn() }))
 vi.mock('@/shared/hooks/useCategoriaOptions', () => ({ useCategoriaOptions: vi.fn() }))
 vi.mock('@/shared/hooks/useObraOptions', () => ({ useObraOptions: vi.fn() }))
@@ -22,9 +26,17 @@ function renderWithQueryClient(ui: React.ReactElement) {
 
 function setupMocks() {
   vi.mocked(useCartaoCreditoOptions).mockReturnValue({
-    data: [{ id: 'cc1', contaBancariaId: 'cb1', banco: 'Itaú', apelido: 'Corporativo', diaFechamento: 10, diaVencimento: 17 }],
+    data: [{ id: 'cc1', contaBancariaId: 'cb1', banco: 'Itaú', diaFechamento: 10, diaVencimento: 17 }],
     isLoading: false,
   } as unknown as ReturnType<typeof useCartaoCreditoOptions>)
+  vi.mocked(useContaBancariaOptions).mockReturnValue({
+    data: [{ id: 'cb1', empresaId: 'e1', banco: 'Itaú' }],
+    isLoading: false,
+  } as unknown as ReturnType<typeof useContaBancariaOptions>)
+  vi.mocked(useEmpresaOptions).mockReturnValue({
+    data: [{ id: 'e1', nome: 'H Vieira' }],
+    isLoading: false,
+  } as unknown as ReturnType<typeof useEmpresaOptions>)
   vi.mocked(useFornecedorOptions).mockReturnValue({
     data: [{ id: 'f1', nome: 'Posto Shell' }],
     isLoading: false,

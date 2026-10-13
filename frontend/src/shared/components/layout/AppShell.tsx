@@ -18,8 +18,6 @@ const CADASTROS_BASE_NAV = [
 
 const FINANCEIRO_NAV = [
   { to: '/lancamentos-financeiros', label: 'Lançamentos' },
-  { to: '/liquidacoes-financeiras', label: 'Liquidações' },
-  { to: '/ajustes-financeiros', label: 'Ajustes' },
   { to: '/conciliacao-bancaria', label: 'Conciliação Bancária' },
   { to: '/balanco', label: 'Balanço' },
 ]

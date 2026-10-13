@@ -37,7 +37,7 @@ class TransferenciaInternaServiceTest {
 
     private void iniciar() {
         service = new TransferenciaInternaService(repository, movimentacaoBancariaRepository);
-        contaBancaria = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil", "Conta Principal");
+        contaBancaria = new ContaBancaria(new Empresa("H Vieira"), "Banco do Brasil");
     }
 
     private MovimentacaoBancaria movimentacaoComId(UUID id, BigDecimal valor) {

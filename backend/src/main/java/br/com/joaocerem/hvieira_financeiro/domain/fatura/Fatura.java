@@ -1,7 +1,6 @@
 package br.com.joaocerem.hvieira_financeiro.domain.fatura;
 
 import br.com.joaocerem.hvieira_financeiro.domain.cartaocredito.CartaoCredito;
-import br.com.joaocerem.hvieira_financeiro.domain.liquidacaofinanceira.LiquidacaoFinanceira;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -22,9 +21,10 @@ import java.util.UUID;
  * (`cartao`, `ciclo`, `valorTotalCalculado`, `valorCobrado` congelados desde então, Seção 2/4 do
  * documento de domínio). Por isso, sem setter para nenhum desses quatro campos.
  *
- * `liquidacaoFinanceira` é o único campo preenchido depois da criação — no momento do pagamento da
- * Fatura (Seção 3: "Fatura → Liquidação Financeira"). Ver
- * {@link br.com.joaocerem.hvieira_financeiro.application.fatura.FaturaService#pagar}.
+ * A partir da Sprint 3 (rodada de evolução operacional): sem campo `liquidacaoFinanceira` — não
+ * existe mais ação "Pagar Fatura"; `paga` nunca é persistido, é sempre calculado em tempo de
+ * leitura a partir da conciliação bancária dos Lançamentos gerados pelas Parcelas desta Fatura
+ * (`application/fatura/FaturaService#calcularPaga`).
  */
 @Entity
 @Table(name = "faturas")
@@ -46,10 +46,6 @@ public class Fatura {
 
     @Column(name = "valor_cobrado", nullable = false)
     private BigDecimal valorCobrado;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "liquidacao_financeira_id")
-    private LiquidacaoFinanceira liquidacaoFinanceira;
 
     protected Fatura() {
         // exigido pelo JPA
@@ -80,13 +76,5 @@ public class Fatura {
 
     public BigDecimal getValorCobrado() {
         return valorCobrado;
-    }
-
-    public LiquidacaoFinanceira getLiquidacaoFinanceira() {
-        return liquidacaoFinanceira;
-    }
-
-    public void marcarComoPaga(LiquidacaoFinanceira liquidacaoFinanceira) {
-        this.liquidacaoFinanceira = liquidacaoFinanceira;
     }
 }

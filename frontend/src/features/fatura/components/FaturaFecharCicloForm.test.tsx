@@ -4,8 +4,12 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { FaturaFecharCicloForm } from './FaturaFecharCicloForm'
 import { useCartaoCreditoOptions } from '@/shared/hooks/useCartaoCreditoOptions'
+import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 
 vi.mock('@/shared/hooks/useCartaoCreditoOptions', () => ({ useCartaoCreditoOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useContaBancariaOptions', () => ({ useContaBancariaOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useEmpresaOptions', () => ({ useEmpresaOptions: vi.fn() }))
 
 function renderWithQueryClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -14,9 +18,17 @@ function renderWithQueryClient(ui: React.ReactElement) {
 
 function setupMocks() {
   vi.mocked(useCartaoCreditoOptions).mockReturnValue({
-    data: [{ id: 'cc1', contaBancariaId: 'cb1', banco: 'Itaú', apelido: 'Corporativo', diaFechamento: 10, diaVencimento: 17 }],
+    data: [{ id: 'cc1', contaBancariaId: 'cb1', banco: 'Itaú', diaFechamento: 10, diaVencimento: 17 }],
     isLoading: false,
   } as unknown as ReturnType<typeof useCartaoCreditoOptions>)
+  vi.mocked(useContaBancariaOptions).mockReturnValue({
+    data: [{ id: 'cb1', empresaId: 'e1', banco: 'Itaú' }],
+    isLoading: false,
+  } as unknown as ReturnType<typeof useContaBancariaOptions>)
+  vi.mocked(useEmpresaOptions).mockReturnValue({
+    data: [{ id: 'e1', nome: 'H Vieira' }],
+    isLoading: false,
+  } as unknown as ReturnType<typeof useEmpresaOptions>)
 }
 
 describe('FaturaFecharCicloForm', () => {

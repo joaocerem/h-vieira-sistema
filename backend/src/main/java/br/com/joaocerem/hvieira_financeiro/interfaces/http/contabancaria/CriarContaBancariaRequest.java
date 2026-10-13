@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public record CriarContaBancariaRequest(
         @NotNull(message = "empresaId é obrigatório") UUID empresaId,
-        @NotBlank(message = "banco é obrigatório") String banco,
-        @NotBlank(message = "apelido é obrigatório") String apelido
+        @NotBlank(message = "banco é obrigatório") String banco
 ) {
 }

@@ -8,6 +8,8 @@ import { CurrencyInput } from '@/shared/components/form/CurrencyInput'
 import { FormField } from '@/shared/components/form/FormField'
 import { SelectField } from '@/shared/components/form/SelectField'
 import { useCartaoCreditoOptions } from '@/shared/hooks/useCartaoCreditoOptions'
+import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 import type { FieldError } from '@/shared/api/errors'
 
 const schema = z.object({
@@ -38,6 +40,16 @@ export function FaturaFecharCicloForm({
   serverFieldErrors?: FieldError[]
 }) {
   const { data: cartoes, isLoading: isLoadingCartoes } = useCartaoCreditoOptions()
+  const { data: contasBancarias } = useContaBancariaOptions()
+  const { data: empresas } = useEmpresaOptions()
+
+  // Identificação do Cartão vira Empresa + Banco (decisão de negócio, Sprint 3) — Empresa
+  // resolvida em duas etapas: `contaBancariaId` → Conta Bancária → `empresaId` → Empresa.
+  function labelDoCartao(cartaoBanco: string, contaBancariaId: string) {
+    const conta = contasBancarias?.find((c) => c.id === contaBancariaId)
+    const empresa = conta ? empresas?.find((e) => e.id === conta.empresaId) : undefined
+    return `${empresa?.nome ?? '—'} — ${cartaoBanco}`
+  }
 
   const form = useForm<FaturaFecharCicloFormValues>({
     resolver: zodResolver(schema),
@@ -61,7 +73,7 @@ export function FaturaFecharCicloForm({
         placeholder={isLoadingCartoes ? 'Carregando...' : 'Selecione o cartão'}
         options={(cartoes ?? []).map((cartao) => ({
           value: cartao.id,
-          label: `${cartao.banco} — ${cartao.apelido}`,
+          label: labelDoCartao(cartao.banco, cartao.contaBancariaId),
         }))}
         error={form.formState.errors.cartaoId?.message}
         disabled={isLoadingCartoes}

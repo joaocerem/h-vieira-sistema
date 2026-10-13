@@ -2,6 +2,7 @@ package br.com.joaocerem.hvieira_financeiro.application.lancamentofinanceiro;
 
 import br.com.joaocerem.hvieira_financeiro.application.categoria.CategoriaService;
 import br.com.joaocerem.hvieira_financeiro.application.cliente.ClienteService;
+import br.com.joaocerem.hvieira_financeiro.application.conciliacaobancaria.VinculoConciliacaoService;
 import br.com.joaocerem.hvieira_financeiro.application.empresa.EmpresaService;
 import br.com.joaocerem.hvieira_financeiro.application.fornecedor.FornecedorService;
 import br.com.joaocerem.hvieira_financeiro.application.frota.VeiculoService;
@@ -9,7 +10,6 @@ import br.com.joaocerem.hvieira_financeiro.application.obra.ObraService;
 import br.com.joaocerem.hvieira_financeiro.common.exception.BusinessException;
 import br.com.joaocerem.hvieira_financeiro.common.exception.ResourceNotFoundException;
 import br.com.joaocerem.hvieira_financeiro.common.validation.Validacoes;
-import br.com.joaocerem.hvieira_financeiro.domain.aplicacaodeliquidacao.AplicacaoDeLiquidacaoRepository;
 import br.com.joaocerem.hvieira_financeiro.domain.categoria.Categoria;
 import br.com.joaocerem.hvieira_financeiro.domain.cliente.Cliente;
 import br.com.joaocerem.hvieira_financeiro.domain.empresa.Empresa;
@@ -46,17 +46,23 @@ import java.util.UUID;
  * quando já existe Rateio vinculado. Usa `RateioDespesaRepository` diretamente (não
  * `RateioDespesaService`) para evitar dependência circular de construtor — `RateioDespesaService` já
  * depende deste service.
+ *
+ * A partir da Sprint 3 (rodada de evolução operacional): `atualizar`/`cancelar` nunca bloqueiam por
+ * causa de conciliação já existente (decisão explícita do usuário — "o Lançamento Financeiro nunca
+ * deve ser bloqueado para edição... também nunca deve ser bloqueado para cancelamento apenas porque
+ * já foi conciliado"; é comum ajustar o valor lançado antecipadamente no momento da conciliação).
+ * Em vez de bloquear, os dois chamam `VinculoConciliacaoService#revalidarConciliacao` ao final — se o
+ * Lançamento tinha um Vínculo `Confirmado` e deixou de ser compatível, o Vínculo vira `Divergente`
+ * automaticamente, nunca desfeito silenciosamente.
  */
 @Service
 @Transactional
 public class LancamentoFinanceiroService {
 
-    private static final String STATUS_ABERTO = "Aberto";
-    private static final String STATUS_PARCIAL = "Parcialmente Pago-Recebido";
-    private static final String STATUS_PAGO = "Pago-Recebido";
+    private static final String STATUS_CONCILIADO = "Conciliado";
+    private static final String STATUS_NAO_CONCILIADO = "Não Conciliado";
 
     private final LancamentoFinanceiroRepository repository;
-    private final AplicacaoDeLiquidacaoRepository aplicacaoDeLiquidacaoRepository;
     private final RateioDespesaRepository rateioDespesaRepository;
     private final EmpresaService empresaService;
     private final CategoriaService categoriaService;
@@ -64,18 +70,18 @@ public class LancamentoFinanceiroService {
     private final ClienteService clienteService;
     private final ObraService obraService;
     private final VeiculoService veiculoService;
+    private final VinculoConciliacaoService vinculoConciliacaoService;
 
     public LancamentoFinanceiroService(LancamentoFinanceiroRepository repository,
-                                        AplicacaoDeLiquidacaoRepository aplicacaoDeLiquidacaoRepository,
                                         RateioDespesaRepository rateioDespesaRepository,
                                         EmpresaService empresaService,
                                         CategoriaService categoriaService,
                                         FornecedorService fornecedorService,
                                         ClienteService clienteService,
                                         ObraService obraService,
-                                        VeiculoService veiculoService) {
+                                        VeiculoService veiculoService,
+                                        VinculoConciliacaoService vinculoConciliacaoService) {
         this.repository = repository;
-        this.aplicacaoDeLiquidacaoRepository = aplicacaoDeLiquidacaoRepository;
         this.rateioDespesaRepository = rateioDespesaRepository;
         this.empresaService = empresaService;
         this.categoriaService = categoriaService;
@@ -83,6 +89,7 @@ public class LancamentoFinanceiroService {
         this.clienteService = clienteService;
         this.obraService = obraService;
         this.veiculoService = veiculoService;
+        this.vinculoConciliacaoService = vinculoConciliacaoService;
     }
 
     public LancamentoFinanceiro criar(String tipo, UUID empresaId, UUID categoriaId, UUID fornecedorId,
@@ -136,14 +143,6 @@ public class LancamentoFinanceiroService {
         validarExclusividadeFornecedorCliente(lancamento.getTipo(), fornecedorId, clienteId);
         Validacoes.exigirValorMonetarioPositivo(valor, "valor");
 
-        if (valor.compareTo(lancamento.getValor()) != 0) {
-            BigDecimal somaAplicada = aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id);
-            if (somaAplicada.compareTo(BigDecimal.ZERO) > 0) {
-                throw new BusinessException(
-                        "valor não pode ser alterado: já existe Aplicação de Liquidação vinculada a este Lançamento (regra 23 — use Ajuste Financeiro)");
-            }
-        }
-
         Empresa empresa = empresaService.buscarPorId(empresaId);
         Categoria categoria = categoriaService.buscarPorId(categoriaId);
         Fornecedor fornecedor = fornecedorId != null ? fornecedorService.buscarPorId(fornecedorId) : null;
@@ -166,18 +165,17 @@ public class LancamentoFinanceiroService {
         lancamento.setVencimento(vencimento);
         lancamento.setDescricao(descricao);
         lancamento.setDocumento(documento);
-        return repository.save(lancamento);
+        lancamento = repository.save(lancamento);
+        vinculoConciliacaoService.revalidarConciliacao(lancamento);
+        return lancamento;
     }
 
     public LancamentoFinanceiro cancelar(UUID id) {
         LancamentoFinanceiro lancamento = buscarPorId(id);
-        BigDecimal somaAplicada = aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(id);
-        if (somaAplicada.compareTo(BigDecimal.ZERO) != 0) {
-            throw new BusinessException(
-                    "Lançamento não pode ser cancelado: já existe Aplicação de Liquidação vinculada (soma deve ser exatamente zero)");
-        }
         lancamento.cancelar();
-        return repository.save(lancamento);
+        lancamento = repository.save(lancamento);
+        vinculoConciliacaoService.revalidarConciliacao(lancamento);
+        return lancamento;
     }
 
     @Transactional(readOnly = true)
@@ -192,19 +190,14 @@ public class LancamentoFinanceiroService {
     }
 
     /**
-     * `status_financeiro` — sempre calculado a partir da soma de `APLICAÇÃO_DE_LIQUIDAÇÃO.valor_aplicado`
-     * vinculada, nunca persistido (Seção 2/5 do documento de domínio).
+     * `status_financeiro` — a partir da Sprint 3 (rodada de evolução operacional), binário
+     * (Conciliado / Não Conciliado — sem estado "Aberto" nem qualquer intermediário visível ao
+     * usuário, decisão explícita), calculado a partir da existência de um Vínculo Conciliação
+     * `Confirmado` referenciando este Lançamento — nunca persistido.
      */
     @Transactional(readOnly = true)
     public String calcularStatusFinanceiro(LancamentoFinanceiro lancamento) {
-        BigDecimal somaAplicada = aplicacaoDeLiquidacaoRepository.somarValorAplicadoPorLancamento(lancamento.getId());
-        if (somaAplicada.compareTo(BigDecimal.ZERO) == 0) {
-            return STATUS_ABERTO;
-        }
-        if (somaAplicada.compareTo(lancamento.getValor()) >= 0) {
-            return STATUS_PAGO;
-        }
-        return STATUS_PARCIAL;
+        return vinculoConciliacaoService.estaConciliado(lancamento.getId()) ? STATUS_CONCILIADO : STATUS_NAO_CONCILIADO;
     }
 
     private void validarTipo(String tipo) {

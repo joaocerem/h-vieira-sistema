@@ -12,7 +12,6 @@ public final class CartaoCreditoMapper {
                 cartao.getId(),
                 cartao.getContaBancaria().getId(),
                 cartao.getBanco(),
-                cartao.getApelido(),
                 cartao.getDiaFechamento(),
                 cartao.getDiaVencimento()
         );

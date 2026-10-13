@@ -36,7 +36,7 @@ export function MovimentacaoBancariaTable({
   onConfirmar: (id: string) => void
   onMarcarDivergente: (id: string) => void
   onMarcarSemCorrespondencia: (id: string) => void
-  onVincularManualmente: (id: string, liquidacaoFinanceiraId: string) => void
+  onVincularManualmente: (id: string, lancamentoFinanceiroIds: string[]) => void
   isMutating: boolean
 }) {
   if (movimentacoes.length === 0) {
@@ -89,8 +89,8 @@ export function MovimentacaoBancariaTable({
                       onConfirmar={() => onConfirmar(vinculo.id)}
                       onMarcarDivergente={() => onMarcarDivergente(vinculo.id)}
                       onMarcarSemCorrespondencia={() => onMarcarSemCorrespondencia(vinculo.id)}
-                      onVincularManualmente={(liquidacaoFinanceiraId) =>
-                        onVincularManualmente(vinculo.id, liquidacaoFinanceiraId)
+                      onVincularManualmente={(lancamentoFinanceiroIds) =>
+                        onVincularManualmente(vinculo.id, lancamentoFinanceiroIds)
                       }
                       isPending={isMutating}
                     />

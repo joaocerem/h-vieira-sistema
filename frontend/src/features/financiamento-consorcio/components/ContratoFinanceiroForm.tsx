@@ -173,7 +173,7 @@ export function ContratoFinanceiroForm({
           placeholder={isLoadingContasBancarias ? 'Carregando...' : 'Selecione a conta bancária'}
           options={(contasBancarias ?? []).map((conta) => ({
             value: conta.id,
-            label: `${conta.banco} — ${conta.apelido}`,
+            label: `${(empresas ?? []).find((empresa) => empresa.id === conta.empresaId)?.nome ?? '—'} — ${conta.banco}`,
           }))}
           error={form.formState.errors.contaBancariaId?.message}
           disabled={isLoadingContasBancarias}

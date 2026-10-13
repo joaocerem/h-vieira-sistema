@@ -7,6 +7,7 @@ import { Input } from '@/shared/components/ui/input'
 import { FormField } from '@/shared/components/form/FormField'
 import { SelectField } from '@/shared/components/form/SelectField'
 import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 import type { FieldError } from '@/shared/api/errors'
 
 // Sem validação de faixa (1-31) de propósito — o backend também não valida
@@ -29,7 +30,6 @@ function buildSchema(modo: 'criar' | 'editar') {
         ? z.string().min(1, 'Conta bancária é obrigatória')
         : z.string().optional(),
     banco: z.string().trim().min(1, 'Banco é obrigatório'),
-    apelido: z.string().trim().min(1, 'Apelido é obrigatório'),
     // `z.number()` puro, não `z.coerce.number()` — coerce faz o tipo de entrada do resolver
     // ficar `unknown`. A conversão de string para número é feita pelo próprio react-hook-form
     // (`valueAsNumber: true` no `register`, abaixo), não pelo Zod.
@@ -56,22 +56,29 @@ export function CartaoCreditoForm({
   serverFieldErrors?: FieldError[]
 }) {
   const { data: contasBancarias, isLoading: isLoadingContasBancarias } = useContaBancariaOptions()
+  const { data: empresas } = useEmpresaOptions()
 
   const form = useForm<CartaoCreditoFormValues>({
     resolver: zodResolver(buildSchema(modo)),
     defaultValues: defaultValues ?? {
       contaBancariaId: '',
       banco: '',
-      apelido: '',
       diaFechamento: undefined,
       diaVencimento: undefined,
     },
   })
 
+  // Identificação da Conta Bancária no select vira Empresa + Banco (decisão de negócio, Sprint
+  // 3) — a Empresa é resolvida aqui, cruzando `conta.empresaId` com `useEmpresaOptions`, mesmo
+  // padrão já usado em `ContaBancariaTable.tsx`.
+  function nomeDaEmpresa(empresaId: string) {
+    return empresas?.find((empresa) => empresa.id === empresaId)?.nome ?? '—'
+  }
+
   useEffect(() => {
     serverFieldErrors?.forEach((fieldError) => {
       const campo = fieldError.field as keyof CartaoCreditoFormValues
-      if (['contaBancariaId', 'banco', 'apelido', 'diaFechamento', 'diaVencimento'].includes(campo)) {
+      if (['contaBancariaId', 'banco', 'diaFechamento', 'diaVencimento'].includes(campo)) {
         form.setError(campo, { type: 'server', message: fieldError.message })
       }
     })
@@ -86,7 +93,7 @@ export function CartaoCreditoForm({
           placeholder={isLoadingContasBancarias ? 'Carregando...' : 'Selecione a conta bancária'}
           options={(contasBancarias ?? []).map((conta) => ({
             value: conta.id,
-            label: `${conta.banco} — ${conta.apelido}`,
+            label: `${nomeDaEmpresa(conta.empresaId)} — ${conta.banco}`,
           }))}
           error={form.formState.errors.contaBancariaId?.message}
           disabled={isLoadingContasBancarias}
@@ -96,10 +103,6 @@ export function CartaoCreditoForm({
 
       <FormField id="banco" label="Banco" error={form.formState.errors.banco?.message}>
         <Input id="banco" autoFocus={modo === 'editar'} {...form.register('banco')} />
-      </FormField>
-
-      <FormField id="apelido" label="Apelido" error={form.formState.errors.apelido?.message}>
-        <Input id="apelido" placeholder="ex.: Cartão Corporativo" {...form.register('apelido')} />
       </FormField>
 
       <div className="grid grid-cols-2 gap-4">

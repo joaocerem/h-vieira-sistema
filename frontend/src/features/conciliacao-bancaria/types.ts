@@ -42,11 +42,15 @@ export interface ImportarMovimentacoesValues {
  * `docs/domain-model/14-vinculo-conciliacao.md` — toda Movimentação tem exatamente um Vínculo
  * (1:1 obrigatório, gerado automaticamente); sem tela própria de criação — reflexo direto
  * dessa regra, não uma omissão.
+ *
+ * `lancamentosFinanceirosIds` (Sprint 3 — rodada de evolução operacional) — substitui
+ * `liquidacaoFinanceiraId`; N:N direto com Lançamento Financeiro — um Vínculo pode cobrir um
+ * ou mais Lançamentos de uma vez (ex. pagamento de fatura de cartão cobrindo várias Parcelas).
  */
 export interface VinculoConciliacao {
   id: string
   movimentacaoBancariaId: string
-  liquidacaoFinanceiraId: string | null
+  lancamentosFinanceirosIds: string[]
   estadoConciliacao: EstadoConciliacao
 }
 
@@ -57,18 +61,22 @@ export type EstadoConciliacao =
   | 'Divergente'
   | 'Sem Correspondência'
 
-/** Espelha `VinculoConciliacaoService.ResultadoSugestaoAutomatica` (backend). */
+/**
+ * Espelha `VinculoConciliacaoService.ResultadoSugestaoAutomatica` (backend). `comMultiplosCandidatos`
+ * (Sprint 3) — Vínculos com dois ou mais candidatos igualmente compatíveis, deixados em
+ * `Não Vinculado` para o usuário resolver manualmente (o sistema nunca escolhe sozinho).
+ */
 export interface ResultadoSugestaoAutomatica {
   processados: number
   sugeridos: number
   semCorrespondencia: number
+  comMultiplosCandidatos: number
 }
 
 /**
  * Espelha `TransferenciaInternaResponse` (backend). Ver
  * `docs/domain-model/13-transferencia-interna.md` — nunca gera `LANÇAMENTO_FINANCEIRO`; sem
- * `atualizar` — "Regras de alteração: não definidas" no documento de domínio, mesma cautela já
- * aplicada a `LiquidacaoFinanceira`.
+ * `atualizar` — "Regras de alteração: não definidas" no documento de domínio.
  */
 export interface TransferenciaInterna {
   id: string

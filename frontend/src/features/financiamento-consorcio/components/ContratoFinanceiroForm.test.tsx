@@ -24,7 +24,7 @@ function setupMocks() {
     isLoading: false,
   } as unknown as ReturnType<typeof useEmpresaOptions>)
   vi.mocked(useContaBancariaOptions).mockReturnValue({
-    data: [{ id: 'cb1', banco: 'Itaú', apelido: 'Conta Movimento' }],
+    data: [{ id: 'cb1', empresaId: 'e1', banco: 'Itaú' }],
     isLoading: false,
   } as unknown as ReturnType<typeof useContaBancariaOptions>)
   vi.mocked(useFornecedorOptions).mockReturnValue({
@@ -45,8 +45,8 @@ describe('ContratoFinanceiroForm', () => {
       <ContratoFinanceiroForm modo="criar" onSubmit={vi.fn()} isSubmitting={false} submitLabel="Criar contrato" />,
     )
 
-    // `tipo` já nasce pré-selecionado como "Financiamento" (mesmo padrão de `LancamentoForm`/
-    // `LiquidacaoForm` para campos enum obrigatórios de dois valores) — não fica em branco, então
+    // `tipo` já nasce pré-selecionado como "Financiamento" (mesmo padrão de `LancamentoForm` para
+    // campos enum obrigatórios de dois valores) — não fica em branco, então
     // não há mensagem "obrigatório" para ele nesse fluxo.
     await user.click(screen.getByRole('button', { name: /criar contrato/i }))
 

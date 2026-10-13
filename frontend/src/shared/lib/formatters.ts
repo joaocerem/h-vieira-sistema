@@ -1,7 +1,6 @@
 /**
- * Formatadores compartilhados — extraídos nesta sessão porque Lançamento Financeiro e
- * Liquidação Financeira precisam exatamente da mesma formatação de data e valor monetário
- * (reuso real e simultâneo, não antecipado).
+ * Formatadores compartilhados — reusados por várias features que precisam exatamente da
+ * mesma formatação de data e valor monetário (reuso real e simultâneo, não antecipado).
  */
 
 /**

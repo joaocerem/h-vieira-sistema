@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ImportarMovimentacoesForm } from './ImportarMovimentacoesForm'
 import { useContaBancariaOptions } from '@/shared/hooks/useContaBancariaOptions'
+import { useEmpresaOptions } from '@/shared/hooks/useEmpresaOptions'
 
 vi.mock('@/shared/hooks/useContaBancariaOptions', () => ({ useContaBancariaOptions: vi.fn() }))
+vi.mock('@/shared/hooks/useEmpresaOptions', () => ({ useEmpresaOptions: vi.fn() }))
 
 function renderWithQueryClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -14,9 +16,13 @@ function renderWithQueryClient(ui: React.ReactElement) {
 
 function setupMocks() {
   vi.mocked(useContaBancariaOptions).mockReturnValue({
-    data: [{ id: 'cb1', banco: 'Itaú', apelido: 'Conta Movimento' }],
+    data: [{ id: 'cb1', empresaId: 'e1', banco: 'Itaú' }],
     isLoading: false,
   } as unknown as ReturnType<typeof useContaBancariaOptions>)
+  vi.mocked(useEmpresaOptions).mockReturnValue({
+    data: [{ id: 'e1', nome: 'H Vieira' }],
+    isLoading: false,
+  } as unknown as ReturnType<typeof useEmpresaOptions>)
 }
 
 describe('ImportarMovimentacoesForm', () => {
