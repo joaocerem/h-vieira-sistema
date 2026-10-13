@@ -29,6 +29,7 @@ Toda a documentação do projeto está na pasta `docs`.
 
 **Por onde começar (contexto atual do projeto):**
 
+- `AGENTS.md` — regras compartilhadas para agentes que trabalham no repositório: hierarquia das fontes, limites de escopo, padrões técnicos, validação e regras de Git.
 - `docs/fluxos-operacionais-definitivos.md` — **fonte oficial atual das regras operacionais e de negócio aprovadas** (Passo 1). Em caso de conflito com a documentação técnica anterior, este documento prevalece.
 - `docs/interface-funcional-financeiro.md` — **Passo 2**: decisões de interface funcional já validadas (como o usuário opera as telas). Não define regras de negócio — estas pertencem ao documento de fluxos acima.
 - `docs/handoff.md` — estado e histórico do projeto, sessão a sessão (a nota mais recente está no fim do documento).
