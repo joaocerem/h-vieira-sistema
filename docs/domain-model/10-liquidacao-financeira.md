@@ -1,5 +1,14 @@
 # LIQUIDAÇÃO_FINANCEIRA
 
+> **SUPERADO — Sprint 3 (rodada de evolução operacional).** Esta entidade foi removida por
+> completo do sistema, sem substituto equivalente — decisão de negócio explícita do usuário: "a
+> única confirmação válida é a conciliação bancária". `VÍNCULO_CONCILIAÇÃO` passa a referenciar
+> `LANÇAMENTO_FINANCEIRO` diretamente (N:N), sem nenhum evento intermediário de
+> decisão/execução de pagamento. Ver `decisions.md`, decisão #51, e
+> `domain-model/14-vinculo-conciliacao.md` (versão vigente). Este documento é mantido **intacto**
+> abaixo por princípio de modelagem 5 ("fatos históricos não são reescritos") — descreve a
+> entidade como ela existiu entre a Fase 3 e a Sprint 3, nunca a arquitetura atual.
+
 ## 1. Visão geral
 
 **Finalidade**: evento de decisão/execução do pagamento ou recebimento de um ou mais Lançamentos (conceitual, Seção 3).

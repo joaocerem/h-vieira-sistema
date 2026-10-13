@@ -8,7 +8,7 @@ import type { CompraCartaoAtualizarValues } from '../types'
  * Corrigir `categoriaId`/`obraId`/`veiculoId` propaga automaticamente para os Lançamentos já
  * gerados pelas Parcelas desta Compra, exceto os que já têm Rateio vinculado (D5, decisão #27,
  * `CompraCartaoService#propagarParaLancamentosJaGerados`) — invalida também a lista de
- * referência de Lançamentos, mesmo padrão já usado em `useCriarLiquidacao`.
+ * referência de Lançamentos.
  */
 export function useAtualizarCompraCartao() {
   const queryClient = useQueryClient()

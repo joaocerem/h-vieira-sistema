@@ -1,5 +1,11 @@
 # AÇÃO_PROPOSTA_IA
 
+> **Nota — Sprint 3 (rodada de evolução operacional)**: `LIQUIDAÇÃO_FINANCEIRA` foi removida
+> (ver `decisions.md`, decisão #51) — os exemplos abaixo que citam "confirmar Liquidação" são
+> anteriores a essa mudança. Este módulo (Fase 6, IA) ainda não foi implementado; o desenho de
+> "ação de nível Alto" para IA será revisitado, com exemplos atualizados para o vocabulário
+> vigente (confirmar um Vínculo Conciliação), quando a Fase 6 for de fato iniciada.
+
 ## 1. Visão geral
 
 **Finalidade**: proposta de criação/alteração de registro feita pela IA, pendente de confirmação (conceitual, Seção 3).

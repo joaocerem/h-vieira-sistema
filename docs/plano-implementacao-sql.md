@@ -1,6 +1,15 @@
 # Plano de implementação SQL
 ## Fase 3, Etapa 3.4
 
+> **Nota — Sprint 3 (rodada de evolução operacional).** Este documento é o plano de ordem de implementação SQL da Fase 3, Etapa 3.4 — registro histórico, não é atualizado linha a linha a cada sprint. `LIQUIDAÇÃO_FINANCEIRA`,
+> `APLICAÇÃO_DE_LIQUIDAÇÃO` e `AJUSTE_FINANCEIRO`, citadas em várias seções abaixo, foram
+> **removidas do sistema**, sem substituto equivalente — a confirmação de pagamento/recebimento
+> passou a ser exclusivamente a conciliação bancária (`VÍNCULO_CONCILIAÇÃO`, N:N com
+> `LANÇAMENTO_FINANCEIRO`; `FATURA.paga` passou a ser calculada, sem Liquidação). Ver `decisions.md`,
+> decisão #51 — fonte corrente para o estado vigente, que **prevalece** sobre as menções abaixo.
+> A evolução real do banco é feita pelas migrations Flyway (`backend/src/main/resources/db/migration/`,
+> V1–V19); os scripts de `database/` são material legado da Fase 3 (ver `database/README.md`).
+
 ## Objetivo
 
 Definir apenas a **ordem** da implementação física do banco PostgreSQL, a partir do que já foi modelado em `docs/modelagem-fisica/`. Não é um documento de schema — nenhuma linha de SQL é escrita aqui.

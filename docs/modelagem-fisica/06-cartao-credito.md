@@ -46,6 +46,11 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5,
 
 ## `faturas` (FATURA)
 
+> **Atualizado — Sprint 3 (rodada de evolução operacional, `V19__remove_liquidacao_financeira.sql`)**:
+> `liquidacao_financeira_id` (coluna, FK, `UNIQUE`) foi removida. `paga` passa a ser calculado
+> em tempo de leitura (`FaturaService#calcularPaga`), nunca uma coluna física — ver
+> `decisions.md`, decisão #51, e `domain-model/19-fatura.md`.
+
 | Coluna | Categoria de tipo | Obrigatória | FK / Observação |
 |---|---|---|---|
 | `id` | Identificador | Sim | PK |
@@ -53,21 +58,20 @@ Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5,
 | `ciclo` | Texto curto | Sim | Imutável |
 | `valor_total_calculado` | Monetário (`NUMERIC`) | Sim | Persistido como retrato histórico congelado — exceção justificada ao princípio 6 (`principios-de-modelagem.md`, princípio 7) |
 | `valor_cobrado` | Monetário (`NUMERIC`) | Sim | Mutável até confirmação, depois congelado — ver observações |
-| `liquidacao_financeira_id` | Identificador (FK) | Não | → `liquidacoes_financeiras.id` — preenchida quando a Fatura é paga (`modelo-logico.md` §3.19: "Fatura 1:1 Liquidação Financeira, opcional") |
 
 **PK**: `id` — `pk_faturas`
 
-**FKs**: `fk_faturas_cartao` (`cartao_id` → `cartoes_credito.id`); `fk_faturas_liquidacao_financeira` (`liquidacao_financeira_id` → `liquidacoes_financeiras.id`) — ambas `ON DELETE RESTRICT`.
+**FK**: `fk_faturas_cartao` (`cartao_id` → `cartoes_credito.id`), `ON DELETE RESTRICT`.
 
-**NOT NULL**: `id`, `cartao_id`, `ciclo`, `valor_total_calculado`, `valor_cobrado`. `liquidacao_financeira_id` nulável (só preenchida quando a Fatura é paga).
+**NOT NULL**: `id`, `cartao_id`, `ciclo`, `valor_total_calculado`, `valor_cobrado`.
 
-**UNIQUE**: `uq_faturas_cartao_ciclo` em (`cartao_id`, `ciclo`) — "um Cartão gera uma Fatura por ciclo" é cardinalidade literal (`19-fatura.md` Seção 3), não inferência. `uq_faturas_liquidacao_financeira` em `liquidacao_financeira_id` — impõe a cardinalidade 1:1 já consolidada (uma Liquidação paga no máximo uma Fatura).
+**UNIQUE**: `uq_faturas_cartao_ciclo` em (`cartao_id`, `ciclo`) — "um Cartão gera uma Fatura por ciclo" é cardinalidade literal (`19-fatura.md` Seção 3), não inferência.
 
 **CHECK**: nenhum de positividade. Diferente dos demais campos `valor` da cadeia financeira, o conceitual **não declara explicitamente** que `valor_total_calculado`/`valor_cobrado` devem ser positivos — nenhum `CHECK` é adicionado aqui, para não inferir além do texto.
 
 **DEFAULT**: nenhum.
 
-**Índices previstos**: índice de FK padrão em `cartao_id` (a `UNIQUE` já cobre a consulta por `cartao_id` + `ciclo`); `liquidacao_financeira_id` já recebe índice implícito da `UNIQUE`.
+**Índices previstos**: índice de FK padrão em `cartao_id` (a `UNIQUE` já cobre a consulta por `cartao_id` + `ciclo`).
 
 **Observações**:
 - `valor_total_calculado`: a fase "calculada" (antes do fechamento) não corresponde a nenhuma linha física desta tabela — a Fatura só nasce, já com o valor congelado, no momento do fechamento do ciclo. Não há `UPDATE` de recálculo a modelar.

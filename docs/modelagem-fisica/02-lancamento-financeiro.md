@@ -3,6 +3,12 @@
 
 Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5. Sem SQL.
 
+> **Atualizado — Sprint 3 (rodada de evolução operacional)**: `APLICAÇÃO_DE_LIQUIDAÇÃO` e
+> `AJUSTE_FINANCEIRO`, citadas abaixo, foram removidas (ver `decisions.md`, decisão #51).
+> `valor` não tem mais restrição de mutabilidade; `status_financeiro` passa a ser calculado a
+> partir de `VÍNCULO_CONCILIAÇÃO` (binário Conciliado/Não Conciliado). Trechos afetados
+> atualizados abaixo.
+
 ---
 
 ## Colunas
@@ -17,7 +23,7 @@ Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arqui
 | `cliente_id` | Identificador (FK) | Condicional | → `clientes.id` — presente só quando `tipo` = Receita |
 | `obra_id` | Identificador (FK) | Não | → `obras.id` — opcional |
 | `veiculo_id` | Identificador (FK) | Não | → `veiculos.id` — opcional, pode coexistir com `obra_id` |
-| `valor` | Monetário (`NUMERIC`) | Sim | Mutável só antes da 1ª Aplicação de Liquidação vinculada |
+| `valor` | Monetário (`NUMERIC`) | Sim | Sempre mutável (Sprint 3) — editar um Lançamento já conciliado nunca é bloqueado, dispara revalidação da conciliação |
 | `data_competencia` | Data | Sim | — |
 | `vencimento` | Data | Sim | — |
 | `situacao_administrativa` | Enumerado — fechado (Ativo / Cancelado) | Sim | Default `Ativo` |
@@ -25,7 +31,7 @@ Tabela: `lancamentos_financeiros`. Categorias de tipo físico referenciam `arqui
 | `descricao` | Texto livre (`TEXT`) | Não | Adicionada em `V16` (rodada de evolução operacional 2026-08) — sem `CHECK`/regra associada além da própria existência |
 | `documento` | Texto livre (`TEXT`) | Não | Adicionada em `V16` (rodada de evolução operacional 2026-08) — número do documento fiscal/comprovante, sem `CHECK`/regra associada além da própria existência |
 
-**`status_financeiro` não é coluna desta tabela.** É valor sempre calculado a partir da soma de `APLICAÇÃO_DE_LIQUIDAÇÃO.valor_aplicado` (Decisão 1; princípio 6) — obtido por consulta/view (`vw_status_financeiro_lancamentos`, a projetar quando `APLICAÇÃO_DE_LIQUIDAÇÃO` for modelada), nunca persistido nesta tabela nem em nenhuma outra.
+**`status_financeiro` não é coluna desta tabela.** É valor sempre calculado, nunca persistido (princípio 6). A partir da Sprint 3, calculado a partir da existência de um `VÍNCULO_CONCILIAÇÃO` `Confirmado` referenciando este Lançamento (binário: Conciliado/Não Conciliado) — `LancamentoFinanceiroService#calcularStatusFinanceiro`, sem view dedicada.
 
 **Coluna `empresa_id` presente e obrigatória** — vínculo direto com Empresa resolvido por D7 (`decisions.md`, decisão #21); ver linha da tabela acima.
 
@@ -57,7 +63,7 @@ Nenhuma — o conceitual não declara cadastro único para Lançamento Financeir
 - `ck_lancamentos_financeiros_valor_positivo` — `valor` > 0.
 - `ck_lancamentos_financeiros_fornecedor_cliente_exclusivo` — exatamente um entre `fornecedor_id`/`cliente_id` preenchido, conforme `tipo` (`tipo`=Despesa ⇒ `fornecedor_id` preenchido e `cliente_id` nulo; `tipo`=Receita ⇒ o inverso). Regra já fechada e objetiva (Seção 4, `09-lancamento-financeiro.md`) — elegível a `CHECK` por `arquitetura-fisica-banco.md` §6.
 
-**Fora do escopo de `CHECK`** (regra multi-tabela, pertence à camada de aplicação — `arquitetura-fisica-banco.md` §6): exclusividade entre `obra_id` preenchido e a existência de linhas em `RATEIO_DESPESA` para o mesmo Lançamento; transição de `situacao_administrativa` para Cancelado exigir soma de Aplicações = 0; imutabilidade condicional de `valor` (só após 1ª Aplicação); consistência entre `empresa_id` e `veiculos.empresa_id` quando `veiculo_id` estiver preenchido (D7, `decisions.md` decisão #21) — `CHECK` não pode referenciar outra tabela em PostgreSQL, validada no caso de uso de criação. Nenhuma dessas é resolvida nesta tabela isoladamente.
+**Fora do escopo de `CHECK`** (regra multi-tabela, pertence à camada de aplicação — `arquitetura-fisica-banco.md` §6): exclusividade entre `obra_id` preenchido e a existência de linhas em `RATEIO_DESPESA` para o mesmo Lançamento; consistência entre `empresa_id` e `veiculos.empresa_id` quando `veiculo_id` estiver preenchido (D7, `decisions.md` decisão #21) — `CHECK` não pode referenciar outra tabela em PostgreSQL, validada no caso de uso de criação. Nenhuma dessas é resolvida nesta tabela isoladamente.
 
 ## DEFAULT previstos
 - `situacao_administrativa` = `'Ativo'`.
@@ -67,8 +73,7 @@ Nenhuma — o conceitual não declara cadastro único para Lançamento Financeir
 - `idx_lancamentos_financeiros_data_competencia` — candidato explícito já citado em `arquitetura-tecnica.md`, Seção 7, para consultas agregadas (Balanço, custo de Obra/Veículo).
 
 ## Observações
-- `valor`, `tipo` e `origem` imutáveis: mecanismo exato de bloqueio no schema (trigger ou revogação de privilégio) não decidido nesta etapa — `arquitetura-fisica-banco.md` §7 já reserva essa escolha para a modelagem física de cada tabela, sem fixar qual.
-- Correção de `valor` após qualquer Aplicação de Liquidação vinculada passa exclusivamente por `AJUSTE_FINANCEIRO` (Decisão 2) — nunca `UPDATE` direto nesta coluna a partir desse ponto; a checagem de "existe Aplicação?" é multi-tabela, não expressável como `CHECK` desta tabela.
+- `tipo` e `origem` imutáveis: mecanismo exato de bloqueio no schema (trigger ou revogação de privilégio) não decidido nesta etapa — `arquitetura-fisica-banco.md` §7 já reserva essa escolha para a modelagem física de cada tabela, sem fixar qual. `valor` deixou de ser condicionalmente imutável na Sprint 3 (sempre editável).
 - FKs para `obras` e `veiculos` referenciam tabelas ainda não modeladas fisicamente nesta etapa (módulos futuros) — nomes já fixados pela convenção de nomenclatura (`arquitetura-fisica-banco.md` §4), sem necessidade de antecipar a estrutura completa dessas tabelas.
 
 ---

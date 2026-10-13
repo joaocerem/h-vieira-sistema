@@ -1359,3 +1359,61 @@ Decisões técnicas resolvidas em sessões posteriores à Etapa 7, com a mesma f
       organização, é nova decisão técnica, não reabertura desta.
     - **Onde está discutida**: `pendencias.md`, Seção 5 (Tecnologia) e Seção 8 (resolvidas);
       `arquitetura-tecnica.md`, Seção 2 (módulos do backend, referência de espelhamento).
+
+51. **Sprint 3 (rodada de evolução operacional) — remoção de `LIQUIDAÇÃO_FINANCEIRA` e
+    `AJUSTE_FINANCEIRO`; conciliação bancária como única confirmação de pagamento/recebimento**:
+    decisão de negócio explícita do usuário, implementada integralmente (backend + frontend +
+    migração de schema) — supersede formalmente as decisões #1, #2, #8, B (resolução
+    adicional), #33 (D12) e #34 (D13) desta Seção A/B/E, e a modelagem original de
+    `domain-model/10-liquidacao-financeira.md`, `11-aplicacao-de-liquidacao.md` e
+    `15-ajuste-financeiro.md` (mantidos no repositório com um aviso de superação no topo —
+    princípio 5, "fatos históricos não são reescritos" — nunca apagados).
+    - **O que muda**: `LIQUIDAÇÃO_FINANCEIRA` e `APLICAÇÃO_DE_LIQUIDAÇÃO` deixam de existir —
+      sem substituto equivalente, nenhuma entidade nova recria essa função. `AJUSTE_FINANCEIRO`
+      também deixa de existir — sem substituto equivalente; a divergência entre um Lançamento
+      já conciliado e a Movimentação Bancária correspondente passa a ser detectada
+      automaticamente (mesma checagem de compatibilidade usada na sugestão/confirmação, chamada
+      de novo após qualquer edição ou cancelamento do Lançamento), não corrigida manualmente
+      por um registro formal.
+    - **`VÍNCULO_CONCILIAÇÃO` passa a referenciar `LANÇAMENTO_FINANCEIRO` diretamente, N:N**
+      (`domain-model/14-vinculo-conciliacao.md`, reescrito) — um único Vínculo pode cobrir vários
+      Lançamentos de uma vez (ex. pagamento de fatura de cartão cobrindo várias Parcelas de uma
+      vez). Mapeado como `@ManyToMany`/`@JoinTable` simples (tabela `vinculos_conciliacao_lancamentos`)
+      — decisão explícita do usuário de **não** criar uma entidade de domínio intermediária
+      representando a tabela de junção (não há limitação técnica do JPA que exigisse isso; a
+      alternativa foi avaliada e descartada por reintroduzir a mesma complexidade de
+      `APLICAÇÃO_DE_LIQUIDAÇÃO` com outro nome — contra o próprio objetivo da sprint).
+    - **Critérios de compatibilidade** (usados idênticos pela sugestão automática, pela
+      confirmação, pela vinculação manual e pela revalidação após edição/cancelamento): mesma
+      Empresa; mesma natureza (Despesa/Receita); mesmo valor (soma de todos os Lançamentos
+      ligados ao Vínculo, nunca comparação individual); vencimento de cada Lançamento ligado
+      dentro de uma tolerância configurável (decisão #11 desta Seção A, T6 — ver
+      `application/conciliacaobancaria/ConciliacaoProperties.java`, default alterado de 2 para 3
+      dias nesta sprint); e, implicitamente, `situação_administrativa = 'Ativo'` em todos os
+      Lançamentos ligados — sem essa checagem, cancelar um Lançamento já conciliado nunca
+      produziria divergência, contradizendo a exigência explícita do usuário de que "a regra
+      nunca deve depender do fato de ter ocorrido uma edição ou um cancelamento".
+    - **`status_financeiro` do Lançamento passa a ser binário** — "Conciliado"/"Não Conciliado",
+      sem nenhum estado intermediário ("Aberto", "Parcialmente Pago-Recebido" deixam de existir)
+      — calculado a partir da existência de um Vínculo Conciliação `Confirmado` referenciando o
+      Lançamento, nunca persistido (princípio 6). O Lançamento **nunca é bloqueado** para edição
+      ou cancelamento por já estar conciliado — decisão explícita do usuário: bloquear geraria
+      mais retrabalho operacional do que benefício, já que é comum ajustar o valor lançado
+      antecipadamente no momento da conciliação.
+    - **"Contas a Pagar"/"Contas a Receber" não são entidade nem tela/endpoint novos** — são a
+      mesma listagem de Lançamento Financeiro, filtrada no cliente por `tipo`/`status_financeiro`.
+    - **`FATURA.paga`** passa a ser sempre calculado em tempo de leitura (nunca persistido) —
+      verdadeiro quando todos os Lançamentos gerados pelas Parcelas do ciclo estão conciliados;
+      substitui a ação "Pagar Fatura" e o campo `liquidacao_financeira_id` (`domain-model/
+      19-fatura.md`, reescrito). `CONTA_BANCÁRIA`/`CARTÃO_CRÉDITO` perdem o campo `apelido`
+      nesta mesma sprint (identificação por Empresa + Banco) — reclassificado como fluxo
+      operacional de gestão financeira, mesmo motivo de agrupamento desta sprint.
+    - **Sequenciamento de implementação** (decisão explícita do usuário, só para reduzir risco —
+      o resultado final é idêntico): arquitetura nova construída e migrada de forma aditiva
+      (migrações `V17`/`V18`, sem remover nada) e validada de ponta a ponta **antes** da remoção
+      física das estruturas antigas (migração `V19`, só ao final).
+    - **Onde está discutida**: `pendencias.md`, decisões #7-#10 da rodada de evolução
+      operacional (Seção correspondente) e Seção 9; `domain-model/09-lancamento-financeiro.md`,
+      `12-movimentacao-bancaria.md`, `14-vinculo-conciliacao.md`, `19-fatura.md`; `modelagem-fisica/
+      12-conciliacao-bancaria.md`; `backend/.../db/migration/V17__conta_bancaria_cartao_sem_apelido.sql`,
+      `V18__vinculo_conciliacao_lancamento_nn.sql`, `V19__remove_liquidacao_financeira.sql`.

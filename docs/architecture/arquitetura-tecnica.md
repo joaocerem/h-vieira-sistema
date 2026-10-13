@@ -9,6 +9,15 @@
 
 **Natureza deste documento**: consolida a arquitetura técnica original com as mudanças já ratificadas pela arbitragem técnica (`arbitragem-tecnica-final.md`) e com as decisões já incorporadas ao modelo de domínio. Nenhuma linha de código, schema, SQL, classe ou endpoint foi criada. Onde existe mais de uma opção tecnicamente válida ainda sem decisão, isso permanece registrado na Seção 15. A versão original deste documento, anterior a esta consolidação, e o próprio processo de auditoria/réplica/arbitragem que a originou, estão preservados como histórico (`arquitetura-tecnica-v1.md`, `auditoria-critica-arquitetura-tecnica.md`, `replica-tecnica-auditoria-critica.md`, `arbitragem-tecnica-final.md`).
 
+> **Nota — Sprint 3 (rodada de evolução operacional).** Este documento foi escrito antes de
+> qualquer implementação e não é atualizado linha a linha a cada sprint. `LIQUIDAÇÃO_FINANCEIRA`,
+> `APLICAÇÃO_DE_LIQUIDAÇÃO` e `AJUSTE_FINANCEIRO`, citadas em várias seções abaixo (módulos,
+> diagrama de dependências, exemplos de teste, ordem de implementação), foram removidas do
+> sistema — sem substituto equivalente; a confirmação de pagamento/recebimento passou a ser
+> exclusivamente a conciliação bancária (`VÍNCULO_CONCILIAÇÃO`, N:N com `LANÇAMENTO_FINANCEIRO`).
+> Ver `decisions.md`, decisão #51 — fonte corrente para o estado vigente da arquitetura,
+> prevalece sobre as menções não atualizadas abaixo.
+
 ---
 
 ## ÍNDICE

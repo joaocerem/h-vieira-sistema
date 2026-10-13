@@ -1,5 +1,13 @@
 # APLICAÇÃO_DE_LIQUIDAÇÃO
 
+> **SUPERADO — Sprint 3 (rodada de evolução operacional).** Removida junto com
+> `LIQUIDAÇÃO_FINANCEIRA` — sem substituto equivalente. A cobertura de vários Lançamentos por
+> uma única Movimentação Bancária continua possível (`VÍNCULO_CONCILIAÇÃO` N:N com
+> `LANÇAMENTO_FINANCEIRO`, ver `domain-model/14-vinculo-conciliacao.md`), mas sem coluna de
+> valor por par — não existe mais cobertura parcial de um Lançamento; um Lançamento ligado a um
+> Vínculo `Confirmado` conta pelo valor cheio. Ver `decisions.md`, decisão #51. Documento mantido
+> **intacto** abaixo por princípio de modelagem 5.
+
 ## 1. Visão geral
 
 **Finalidade**: ligar N Lançamentos a N Liquidações, com o valor exato de cada combinação (conceitual, Seção 3).

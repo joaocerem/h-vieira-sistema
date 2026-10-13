@@ -1,6 +1,10 @@
 # Modelagem Física — `AJUSTE_FINANCEIRO`
 ## Fase 3, Etapa 3.3.5
 
+> **SUPERADO — Sprint 3 (rodada de evolução operacional).** A tabela `ajustes_financeiros` foi
+> removida pela migração `V19__remove_liquidacao_financeira.sql`. Ver `decisions.md`, decisão
+> #51. Documento mantido intacto abaixo (princípio 5).
+
 Tabela: `ajustes_financeiros`. Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5. Sem SQL.
 
 **Validação prévia**: sem bloqueio (ver mensagem anterior) — D13 resolvida, imutável desde a criação (`decisions.md` decisão #34). Tabela modelada integralmente.

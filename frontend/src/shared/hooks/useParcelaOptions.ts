@@ -19,8 +19,7 @@ export interface ParcelaOption {
  * Lista completa de Parcelas para uso como referência — `features/fatura/` cruza esta lista no
  * cliente (`p.faturaId === fatura.id`) para exibir as Parcelas de um ciclo em
  * `FaturaDetailPage`, já que o backend não expõe `faturaId` como filtro de
- * `GET /api/parcelas` (só `compraCartaoId`/`contratoFinanceiroId`) — mesmo padrão de leitura de
- * referência completa + cruzamento no cliente já usado em `LiquidacaoDetailPage`. Chave
+ * `GET /api/parcelas` (só `compraCartaoId`/`contratoFinanceiroId`). Chave
  * compartilhada com `features/parcela/hooks/queryKeys.ts` (`parcelaKeys.all`).
  */
 export function useParcelaOptions() {

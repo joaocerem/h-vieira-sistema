@@ -14,22 +14,26 @@ cadastro simples de `nome` único consomem `shared/components/crud/` diretamente
 **Cadastros Base**: `empresa/`, `fornecedor/`, `cliente/` — CRUD simples (`nome`), via
 `shared/components/crud/NomeUnicoForm`/`NomeUnicoTable`. `categoria/` — CRUD (`nome` + `tipo`,
 ambos texto livre). `conta-bancaria/` — seleciona Empresa na criação. `cartao-credito/` — só o
-cadastro (banco, apelido, dias de fechamento/vencimento), seleciona Conta Bancária na criação;
-**não inclui** Compra/Parcela/Fatura. `usuario/` — nível básico (nome, identificador de
-acesso, situação de acesso), sem papel/Empresa (bloqueado por S1/S2).
+cadastro (banco, dias de fechamento/vencimento), seleciona Conta Bancária na criação;
+**não inclui** Compra/Parcela/Fatura. Sem `apelido` em Conta Bancária/Cartão desde a Sprint 3
+da rodada de evolução operacional — identificação por Empresa + Banco. `usuario/` — nível
+básico (nome, identificador de acesso, situação de acesso), sem papel/Empresa (bloqueado por
+S1/S2).
 
 **Cadeia financeira central**: `lancamento-financeiro/` — CRUD + ação de cancelamento
-(`POST .../cancelar`); seleção opcional de Obra e Veículo (este filtrado pela Empresa
-selecionada); `valor` via `shared/components/form/CurrencyInput.tsx` (máscara de moeda
-universal); `descricao`/`documento` (texto livre, opcionais, rodada de evolução operacional
-2026-08 — Fase 1); `fornecedorId`/`categoriaId` via `shared/components/form/AutocompleteField.tsx`
-(busca por texto + cadastro rápido embutido, Sprint 2 — `clienteId` permanece
-`SelectField` tradicional, decisão explícita, volume baixo). `liquidacao-financeira/` — só
-criação e detalhe (sem edição — imutável, D12); o array `aplicacoes` (quais Lançamentos a
-Liquidação cobre, e em que valor) é preenchido na própria tela de criação. **Sem
-`features/aplicacao-liquidacao/`** — essa entidade não tem endpoint HTTP próprio no backend.
-**Nota**: `liquidacao-financeira/` e `ajuste-financeiro/` (mais abaixo) serão removidas na
-Sprint 3 da rodada de evolução operacional — ver `docs/pendencias.md`, Seção 9.
+(`POST .../cancelar`, nunca bloqueada por conciliação — Sprint 3); seleção opcional de Obra e
+Veículo (este filtrado pela Empresa selecionada); `valor` via
+`shared/components/form/CurrencyInput.tsx` (máscara de moeda universal); `descricao`/
+`documento` (texto livre, opcionais, rodada de evolução operacional 2026-08 — Fase 1);
+`fornecedorId`/`categoriaId` via `shared/components/form/AutocompleteField.tsx` (busca por
+texto + cadastro rápido embutido, Sprint 2 — `clienteId` permanece `SelectField` tradicional,
+decisão explícita, volume baixo). `statusFinanceiro` binário (Conciliado/Não Conciliado, desde
+a Sprint 3) — calculado pelo backend a partir da conciliação bancária, nunca aqui. Filtro por
+`tipo`/`status` na própria listagem (`LancamentoListPage`) cobre "Contas a Pagar"/"Contas a
+Receber" — recorte client-side sobre os mesmos dados, sem tela nem endpoint próprios.
+**Sem `liquidacao-financeira/`, `aplicacao-liquidacao/` nem `ajuste-financeiro/`** — removidas
+na Sprint 3 (rodada de evolução operacional): a única confirmação de pagamento/recebimento
+válida passou a ser a conciliação bancária (`conciliacao-bancaria/`).
 
 **Operacional**: `obra/` — CRUD + ação dedicada de transição de status (D9 — A executar →
 Em andamento ⇄ Pausada → Concluída, botões calculados a partir do mesmo mapa de transições do
@@ -46,20 +50,24 @@ Transferência Interna). Vínculo Conciliação: **sem tela própria** — 1:1 o
 Movimentação (gerado automaticamente no backend), exibido e operado na mesma tabela de
 Movimentação (`confirmar`/`marcarDivergente`/`marcarSemCorrespondencia`/`vincularManualmente`,
 botões calculados a partir das mesmas guardas de `VinculoConciliacaoService`, mesmo espírito de
-`ObraStatusActions`) e uma ação de sugestão automática (`rodarSugestaoAutomatica`). Transferência
-Interna: criação manual + listagem, sem edição (regra não definida no domínio). `shared/hooks/
-useLiquidacaoOptions.ts` — novo hook de referência cross-feature (escolher a qual Liquidação uma
-Movimentação corresponde), mesmo padrão de `useLancamentoOptions`.
+`ObraStatusActions`) e uma ação de sugestão automática (`rodarSugestaoAutomatica`). A partir da
+Sprint 3 (rodada de evolução operacional): Vínculo N:N direto com Lançamento Financeiro
+(substitui Liquidação Financeira) — `vincularManualmente` escolhe um ou mais Lançamentos de uma
+vez, via lista de checkboxes reusando `shared/hooks/useLancamentoOptions.ts` (mesmo hook do
+formulário de Lançamento, sem hook próprio novo). Transferência Interna: criação manual +
+listagem, sem edição (regra não definida no domínio).
 
 **Cartão de Crédito (fluxo financeiro)**: `compra-cartao/` (`/compras-cartao`) — CRUD;
 `cartaoId`/`valor`/`numeroParcelas` só no modo criar (imutáveis depois —
 `AtualizarCompraCartaoRequest` não os tem); ao criar, o backend gera automaticamente as
 Parcelas do parcelamento. `fatura/` (`/faturas`) — sem `criar`/`atualizar` genéricos: só
-`fecharCiclo` (`/faturas/fechar-ciclo`, a Fatura nasce já com os totais congelados) e `pagar`
-(`/faturas/:id/pagar`, cria uma Liquidação Financeira, que por sua vez gera automaticamente uma
-Movimentação Bancária + Vínculo `Confirmado` — mesma cadeia de integração já corrigida em
-`useCriarLiquidacao`). `FaturaDetailPage` cruza a lista completa de Parcelas por `faturaId` no
-cliente — o backend não expõe esse filtro em `GET /api/parcelas`. `parcela/` (`/parcelas`) —
+`fecharCiclo` (`/faturas/fechar-ciclo`, a Fatura nasce já com os totais congelados). Sem ação
+"Pagar Fatura" desde a Sprint 3 (rodada de evolução operacional) — `paga` é sempre calculado
+pelo backend (`FaturaService#calcularPaga`) a partir da conciliação bancária dos Lançamentos
+gerados pelas Parcelas do ciclo; a única confirmação válida é conciliar a Movimentação
+correspondente em `conciliacao-bancaria/`. `FaturaDetailPage` cruza a lista completa de
+Parcelas por `faturaId` no cliente — o backend não expõe esse filtro em `GET /api/parcelas`.
+`parcela/` (`/parcelas`) —
 só leitura + ação `gerar-lancamento` (gatilho manual do "vencimento"; sem agendador automático
 no projeto); filtro por Compra Cartão sincronizado com a URL (`?compraCartaoId=`), usado pelo
 link "Ver parcelas" de `compra-cartao/`. Novos hooks compartilhados
@@ -84,17 +92,6 @@ própria). Primeira tela genuinamente "dashboard" do Frontend — `ResultadoCard
 `shared/components/ui/card` (shadcn/ui, cadastrado desde o bootstrap, nunca consumido até aqui),
 extraído por reuso real (seis instâncias — Receitas/Despesas/Resultado × Realizado/Projetado —
 na mesma página).
-
-**Ajuste Financeiro**: `ajuste-financeiro/` (`/ajustes-financeiros`) — só `criar`, seguindo
-`AjusteFinanceiroController` exatamente (sem `atualizar`/`excluir`, imutável desde a criação,
-D13). O Lançamento de ajuste precisa já existir (criado antes, via
-`features/lancamento-financeiro/`) — este formulário só formaliza o vínculo entre dois
-Lançamentos, nunca cria um novo. Reusa `useLancamentoOptions` (já existente) para as duas
-seleções (Lançamento original/de ajuste), excluindo Cancelados das opções. Novo hook
-compartilhado `useUsuarioOptions.ts` (`usuarioId` obrigatório — sem sessão autenticada ainda,
-S1, o usuário escolhe explicitamente quem está registrando). Filtro por Lançamento original
-sincronizado com a URL (`?lancamentoOriginalId=`); `features/lancamento-financeiro/` ganhou o
-link "Ajustes" na tabela, apontando para esse filtro.
 
 ## Pendentes
 

@@ -12,8 +12,8 @@ export interface LancamentoOption {
 }
 
 /**
- * Lista de Lançamentos Financeiros para uso no formulário de Liquidação Financeira (escolher
- * quais Lançamentos ela cobre, e em que valor — `aplicacoes`). Mesmo padrão de
+ * Lista de Lançamentos Financeiros para uso como referência (ex. vinculação manual na
+ * Conciliação Bancária, que escolhe quais Lançamentos um Vínculo cobre). Mesmo padrão de
  * `useEmpresaOptions.ts` — chave compartilhada com `features/lancamento-financeiro/hooks/
  * queryKeys.ts` (`lancamentoFinanceiroKeys.all`).
  */

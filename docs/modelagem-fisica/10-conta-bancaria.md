@@ -14,7 +14,9 @@
 | `id` | Identificador | Sim | PK |
 | `empresa_id` | Identificador (FK) | Sim | → `empresas.id` |
 | `banco` | Texto curto | Sim | — |
-| `apelido` | Texto curto | Sim | — |
+
+> **Sprint 3 (rodada de evolução operacional, `V17__conta_bancaria_cartao_sem_apelido.sql`)**:
+> coluna `apelido` removida — identificação passa a ser Empresa + Banco.
 
 ---
 
@@ -25,7 +27,7 @@
 - `fk_contas_bancarias_empresa` (`empresa_id` → `empresas.id`), `ON DELETE RESTRICT` — padrão de `arquitetura-fisica-banco.md` §7.
 
 ## NOT NULL
-`id`, `empresa_id`, `banco`, `apelido` — todos obrigatórios, sem exceção condicional.
+`id`, `empresa_id`, `banco` — todos obrigatórios, sem exceção condicional.
 
 ## UNIQUE
 Nenhuma — o conceitual não declara cadastro único para Conta Bancária.
@@ -38,7 +40,7 @@ Nenhum — nenhum campo tem valor padrão documentado.
 
 ## Índices previstos
 - Índice de FK padrão em `empresa_id` (`arquitetura-fisica-banco.md` §8; critério base de B3, `decisions.md` decisão #37 — toda FK recebe índice, independentemente de consulta específica).
-- Nenhum índice adicional — nenhuma consulta ou regra de negócio já documentada usa `banco`/`apelido` como filtro/agregação frequente (critério objetivo de B3).
+- Nenhum índice adicional — nenhuma consulta ou regra de negócio já documentada usa `banco` como filtro/agregação frequente (critério objetivo de B3).
 
 ## Observações
 

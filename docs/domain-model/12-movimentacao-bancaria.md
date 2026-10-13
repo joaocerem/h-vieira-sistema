@@ -4,9 +4,9 @@
 
 **Finalidade**: fato puro do extrato — existe para 100% do que passa pela conta (conceitual, Seção 3).
 
-**Responsabilidade**: refletir integralmente o extrato bancário de uma Conta, sem exclusão de itens não-operacionais (princípio 2; regra 2). É a única entidade que representa "o que de fato aconteceu no banco" — distinta de `LANÇAMENTO_FINANCEIRO` (obrigação) e `LIQUIDAÇÃO_FINANCEIRA` (decisão/execução) (princípio 2).
+**Responsabilidade**: refletir integralmente o extrato bancário de uma Conta, sem exclusão de itens não-operacionais (princípio 2; regra 2). É a única entidade que representa "o que de fato aconteceu no banco" — distinta de `LANÇAMENTO_FINANCEIRO` (obrigação) (princípio 2).
 
-**Quem cria**: módulo de importação de extrato bancário ("Banco (importação)", tratado no conceitual como responsabilidade própria, distinta de Financeiro — Seção 13), ou gerada automaticamente ao registrar uma Liquidação.
+**Quem cria**: exclusivamente o módulo de importação de extrato bancário ("Banco (importação)", tratado no conceitual como responsabilidade própria, distinta de Financeiro — Seção 13). Até a Sprint 2 também nascia automaticamente ao registrar uma `LIQUIDAÇÃO_FINANCEIRA` — esse segundo caminho foi removido junto com a entidade (Sprint 3, rodada de evolução operacional, ver `decisions.md`, decisão #51); importação é hoje o único caminho de criação.
 
 **Quem altera**: **apenas o campo `classificação`** é regularmente alterável, por Usuário ou por Sugestão de IA confirmada. Os campos factuais (`data`, `descrição`, `valor`, `conta_bancária`) refletem o extrato real e não têm, no conceitual, nenhuma previsão de edição — são fatos, não interpretações.
 
@@ -32,7 +32,7 @@
 
 | Relacionamento | Cardinalidade | Significado | Quem controla | Regras | Restrições |
 |---|---|---|---|---|---|
-| Conta Bancária → Movimentação Bancária | 1:N | Toda Movimentação pertence a exatamente uma Conta | Importação, ou geração via Liquidação | 100% do extrato de uma Conta deve existir como Movimentação | — |
+| Conta Bancária → Movimentação Bancária | 1:N | Toda Movimentação pertence a exatamente uma Conta | Importação de extrato | 100% do extrato de uma Conta deve existir como Movimentação | — |
 | Movimentação Bancária → Vínculo Conciliação | 1:1 | Toda Movimentação tem um estado de conciliação (mesmo que "Sem Correspondência") | Sistema, usuário, ou futuramente IA | — | — |
 | Movimentação Bancária → Transferência Interna | 1:1 (opcional, x2 por Transferência) | Uma Movimentação pode ser um dos dois lados de uma Transferência Interna | Usuário, ou sugestão determinística por valor+data | Quando isso ocorre, a `classificação` correspondente deve ser Transferência Interna | — |
 
@@ -42,7 +42,7 @@
 
 - **Campos mutuamente exclusivos**: nenhum identificado.
 - **Campos obrigatórios por contexto**: nenhum além da obrigatoriedade geral.
-- **Regras de criação**: por importação de extrato, ou gerada automaticamente ao registrar uma Liquidação — nunca digitada livremente pelo usuário como um fato novo (diferente de um Lançamento, que pode nascer manualmente).
+- **Regras de criação**: só por importação de extrato (Sprint 3) — nunca digitada livremente pelo usuário como um fato novo (diferente de um Lançamento, que pode nascer manualmente).
 - **Regras de alteração**: apenas `classificação` é alterável; os campos factuais não têm previsão de edição no conceitual.
 - **Regras de exclusão**: não definidas — e o princípio 2 ("reflete 100% do extrato, sem exclusão de itens não-operacionais") sugere fortemente que a exclusão nunca é permitida, apenas a reclassificação.
 - **Regras de auditoria**: toda alteração de `classificação` deve ser registrada em `LOG_AUDITORIA`, com origem (Manual / Importação / Sugestão de IA Confirmada).

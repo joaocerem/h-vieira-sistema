@@ -1,5 +1,8 @@
 # CARTÃO_CRÉDITO
 
+> **Nota — Sprint 3 (rodada de evolução operacional)**: campo `apelido` removido (identificação
+> passa a ser Empresa + Banco, herdada da Conta Bancária vinculada).
+
 ## 1. Visão geral
 
 **Finalidade**: cartão de crédito da empresa (conceitual, Seção 3).
@@ -22,7 +25,7 @@
 |---|---|---|---|---|---|---|---|---|
 | `conta_bancária` | Conta Bancária à qual o Cartão está vinculado | Referência para outra entidade (Conta Bancária) | Sim | Nenhum | Não definido se pode ser reatribuído depois de criado — inferência: improvável | Cadastro manual | Deve referenciar uma Conta Bancária existente | O Cartão é vinculado a uma Conta, mas é entidade própria |
 | `banco` | Instituição emissora | Texto | Sim | Nenhum | Sim (correção de cadastro) | Cadastro manual | Não vazio | — |
-| `apelido` | Nome usado internamente para identificar o Cartão | Texto | Sim | Nenhum | Sim | Cadastro manual | Não vazio | — |
+| ~~`apelido`~~ | ~~Nome usado internamente para identificar o Cartão~~ | — | — | — | — | — | — | **Removido na Sprint 3** — identificação passa a ser Empresa + Banco |
 | `dia_fechamento` | Dia do mês em que o ciclo de fatura fecha | Número inteiro | Sim | Nenhum | Sim | Cadastro manual | Deve ser um dia válido do mês (1 a 31) — inferência de bom senso, não confirmada textualmente com essa faixa exata | — |
 | `dia_vencimento` | Dia do mês em que a fatura vence | Número inteiro | Sim | Nenhum | Sim | Cadastro manual | Mesma observação de `dia_fechamento` | — |
 
@@ -57,7 +60,7 @@
 |---|---|
 | Derivados | Nenhum |
 | Calculados | Nenhum |
-| Persistidos | `conta_bancária`, `banco`, `apelido`, `dia_fechamento`, `dia_vencimento` |
+| Persistidos | `conta_bancária`, `banco`, `dia_fechamento`, `dia_vencimento` |
 | Imutáveis | Nenhum confirmado |
 | Auditáveis | Todos os campos |
 

@@ -1,6 +1,15 @@
 # H_VIEIRA_Arquitetura_Definitiva.md
 ## Arquitetura Conceitual Definitiva — Sistema Financeiro/Gerencial H Vieira Terraplanagem
 
+> **Nota — Sprint 3 (rodada de evolução operacional).** Este documento descreve o modelo conceitual aprovado na Fase 2 e não é atualizado linha a linha a cada sprint. `LIQUIDAÇÃO_FINANCEIRA`,
+> `APLICAÇÃO_DE_LIQUIDAÇÃO` e `AJUSTE_FINANCEIRO`, citadas em várias seções abaixo, foram
+> **removidas do sistema**, sem substituto equivalente — a confirmação de pagamento/recebimento
+> passou a ser exclusivamente a conciliação bancária (`VÍNCULO_CONCILIAÇÃO`, N:N com
+> `LANÇAMENTO_FINANCEIRO`; `FATURA.paga` passou a ser calculada, sem Liquidação). Ver `decisions.md`,
+> decisão #51 — fonte corrente para o estado vigente, que **prevalece** sobre as menções abaixo.
+> Regras operacionais vigentes de negócio: `fluxos-operacionais-definitivos.md`. A entidade
+> `CONTA_BANCÁRIA` e o `CARTÃO_DE_CRÉDITO` também perderam o campo `apelido` (migration V17).
+
 **Este documento substitui integralmente todas as versões anteriores** (Relatório de Engenharia Reversa das planilhas continua válido como material de origem/contexto histórico; Modelo Conceitual, Arquitetura Revisada com IA, Etapa 4 — Auditoria Crítica e `H_VIEIRA_Arquitetura_Consolidada.md` estão todos superados por este). Onde qualquer conteúdo anterior divergir do que está aqui, **este documento prevalece**.
 
 **Escopo desta etapa**: modelo de negócio, entidades, relacionamentos, regras e arquitetura conceitual da camada de IA. **Nenhuma decisão de banco de dados físico, SQL, código, API, framework ou tela foi tomada.**

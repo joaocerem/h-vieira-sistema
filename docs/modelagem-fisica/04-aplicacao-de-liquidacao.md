@@ -1,6 +1,11 @@
 # Modelagem Física — `APLICAÇÃO_DE_LIQUIDAÇÃO`
 ## Fase 3, Etapa 3.3.4
 
+> **SUPERADO — Sprint 3 (rodada de evolução operacional).** A tabela `aplicacoes_de_liquidacao`
+> foi removida pela migração `V19__remove_liquidacao_financeira.sql`. Ver `decisions.md`,
+> decisão #51, e `modelagem-fisica/12-conciliacao-bancaria.md` (schema vigente). Documento
+> mantido intacto abaixo (princípio 5).
+
 Tabela: `aplicacoes_de_liquidacao`. Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5. Sem SQL.
 
 **Validação prévia**: sem bloqueio (ver mensagem anterior) — entidade sem pendência de domínio associada (`11-aplicacao-de-liquidacao.md`, Seção 7).

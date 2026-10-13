@@ -1,5 +1,14 @@
 # AJUSTE_FINANCEIRO
 
+> **SUPERADO — Sprint 3 (rodada de evolução operacional).** Esta entidade foi removida por
+> completo, sem substituto equivalente. A divergência entre um Lançamento e a Movimentação
+> Bancária a que ele estava conciliado passa a ser detectada **automaticamente** — qualquer
+> edição ou cancelamento de um Lançamento já conciliado reexecuta a mesma checagem de
+> compatibilidade (Empresa, natureza, valor, vencimento, situação administrativa); deixando de
+> ser compatível, o Vínculo Conciliação vira `Divergente` sozinho, sem nenhum registro formal
+> equivalente a este. Ver `decisions.md`, decisão #51, e `domain-model/14-vinculo-conciliacao.md`
+> (versão vigente). Documento mantido **intacto** abaixo por princípio de modelagem 5.
+
 ## 1. Visão geral
 
 **Finalidade**: vínculo formal entre um Lançamento original e um Lançamento de estorno, reembolso, crédito ou ajuste (conceitual, Seção 3 e Seção 9).

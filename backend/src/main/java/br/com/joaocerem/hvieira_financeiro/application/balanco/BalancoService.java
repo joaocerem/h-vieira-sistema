@@ -14,10 +14,10 @@ import java.util.UUID;
  * #19/#35), nunca lê `MOVIMENTAÇÃO_BANCÁRIA` diretamente (regra 8: "Nenhum desses três lê os outros
  * diretamente").
  *
- * Fora de escopo desta implementação, por decisão explícita (#35/A6): "Lucro por Obra" e qualquer
- * composição envolvendo `AJUSTE_FINANCEIRO` — a fórmula (sinal do Ajuste) é explicitamente deixada
- * em aberto pela própria decisão #35, resolvida quando essa funcionalidade específica for
- * especificada.
+ * Fora de escopo desta implementação, por decisão explícita (#35/A6): "Lucro por Obra" — a
+ * fórmula é explicitamente deixada em aberto pela própria decisão #35, resolvida quando essa
+ * funcionalidade específica for especificada. (`AJUSTE_FINANCEIRO`, antes citado aqui, foi
+ * removido do sistema na Sprint 3 — `decisions.md`, decisão #51.)
  */
 @Service
 @Transactional(readOnly = true)

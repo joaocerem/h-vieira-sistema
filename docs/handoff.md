@@ -1,6 +1,13 @@
 # HANDOFF — Projeto H. Vieira Sistema
 ## Encerramento de sessão após conclusão da Fase 2 (consolidação) e da Fase 3 (modelagem física do banco), com correções pontuais de consistência
 
+> **LEIA PRIMEIRO — pontos de entrada atuais (adicionado após a Sprint 3).**
+> - `fluxos-operacionais-definitivos.md` — **fonte oficial atual das regras operacionais/de negócio aprovadas** (Passo 1); prevalece sobre a documentação técnica anterior em caso de conflito.
+> - `interface-funcional-financeiro.md` — **Passo 2**: decisões de interface funcional já validadas (Contas a Pagar validada; Contas a Receber em prototipação; Conciliação apenas inventário). Não define regras de negócio — estas pertencem ao documento de fluxos.
+> - O estado **mais recente** da implementação está na **Seção 28** deste documento (Sprint 3) e em `decisions.md`, decisão #51. As Seções 1 e 2 abaixo descrevem o estado ao final da Fase 3 e **não** foram reescritas.
+> - O schema vigente do banco são as migrations Flyway (`backend/src/main/resources/db/migration/`); `database/` é material legado (ver `database/README.md`).
+> - A implementação atual da Conciliação Bancária (Sprint 3) **ainda não está alinhada** às regras do Passo 1 (Seções 6.3–6.5: só Não conciliado/Conciliado, sugestão forte e aproximada, Empresa apenas auxiliar); a revisão foi adiada deliberadamente.
+
 **Propósito deste documento**: permitir que uma nova sessão continue o projeto imediatamente, sem depender do histórico da conversa anterior. Leia este documento por completo antes de qualquer ação. **Não reabra nenhuma decisão aqui registrada como consolidada.**
 
 ---
@@ -1003,3 +1010,93 @@ Financeiro, nova filosofia de Contas a Pagar/Receber como filtros da listagem ex
 Bancária/Cartão sem apelido) — não iniciada nesta sessão. Também pendente, sem prazo definido:
 a correção do achado de edição no meio do `CurrencyInput` (Seção 26), que o usuário optou por
 adiar em favor de seguir com a Sprint 2 primeiro.
+
+[Nota de atualização posterior a este handoff, 2026-08-27: a Sprint 3 foi implementada e
+concluída — ver Seção 28 deste documento.]
+
+---
+
+## 28. NOTA — SPRINT 3: FLUXO FINANCEIRO (remoção de Liquidação/Ajuste Financeiro, conciliação
+bancária como única confirmação)
+
+Sessão posterior à da Seção 27. Por ser a sprint mais significativa da rodada (altera o núcleo
+da arquitetura financeira), o usuário exigiu disciplina reforçada antes de qualquer código:
+auditoria técnica completa (levantamento de todo módulo/entidade/endpoint afetado, consolidação
+das regras de negócio em palavras próprias — sem interpretação —, pontos de atenção, dúvidas de
+negócio) seguida de um plano de implementação, ambos apresentados e só então aprovados
+explicitamente. A aprovação veio com **3 correções obrigatórias**, incorporadas ao plano antes
+de iniciar:
+
+1. **Sem entidade de domínio para o relacionamento N:N** Vínculo↔Lançamento — deveria existir
+   só como `@ManyToMany`/`@JoinTable`, detalhe puro de persistência. Confirmado: não há
+   limitação real do JPA que exigisse uma entidade de junção; a alternativa original (entidade
+   `VinculoConciliacaoLancamento`) foi descartada por recriar a complexidade de Aplicação de
+   Liquidação com outro nome — exatamente o que a sprint existe para eliminar.
+2. **Cancelamento deve seguir a mesma filosofia da edição** — a regra de divergência automática
+   nunca deve depender de qual ação (editar ou cancelar) foi realizada, só do resultado da
+   comparação. Isso exigiu um ajuste que não estava no plano original: os critérios de
+   compatibilidade (Empresa, natureza, valor, vencimento) precisavam também checar
+   `situacaoAdministrativa = 'Ativo'` — sem isso, cancelar um Lançamento já conciliado nunca
+   produziria Divergência, contradizendo a exigência do usuário.
+3. **Sequenciamento aditivo-primeiro**: construir e validar a arquitetura nova por completo
+   antes de remover fisicamente as estruturas antigas — só para reduzir risco de implementação,
+   resultado final idêntico. Três migrações: `V17` (Conta Bancária/Cartão sem `apelido`, aditiva
+   — só `DROP COLUMN`, sem afetar outras tabelas), `V18` (tabela de junção
+   `vinculos_conciliacao_lancamentos`, aditiva — não remove `liquidacao_financeira_id` ainda),
+   `V19` (remoção final: tabelas `liquidacoes_financeiras`/`aplicacoes_de_liquidacao`/
+   `ajustes_financeiros`, colunas `liquidacao_financeira_id` de `vinculos_conciliacao`/`faturas`
+   e o `CHECK` `ck_vinculos_conciliacao_liquidacao_coerente_com_estado`).
+
+**Achado real durante a implementação, não previsto no plano**: o `CHECK`
+`ck_vinculos_conciliacao_liquidacao_coerente_com_estado` (herdado de `V15`) exigia
+`liquidacao_financeira_id` preenchido para os estados Sugerido/Confirmado/Divergente — a
+arquitetura nova nunca preenche essa coluna, então esse `CHECK` teria bloqueado a própria
+Sprint 3 em produção se não removido. Só foi percebido ao revisar o schema físico para escrever
+`V19` (a suíte de testes unitários, com Mockito, nunca exercitou uma escrita real contra esse
+`CHECK`) — corrigido na mesma migração que já removia a coluna, sem impacto adicional, mas é um
+lembrete de que a suíte de integração real (`HvieiraFinanceiroApplicationTests`, que sobe o
+Flyway contra Postgres de verdade) é o que de fato validou a migração — os testes unitários
+sozinhos não teriam pego esse problema.
+
+**Implementado nesta sessão — Sprint 3 completa (backend + frontend + remoção final)**:
+
+- **Fase A**: `apelido` removido de Conta Bancária/Cartão (`V17`) — identificação por Empresa +
+  Banco; `FaturaPagarForm`/página/rota/hook removidos do frontend (ação "Pagar Fatura" já
+  eliminada nesta fase, antes mesmo do backend acompanhar — `fatura.paga` chegou como campo
+  `boolean` só depois, na Fase B).
+- **Fase B**: `VinculoConciliacao#lancamentosFinanceiros` (`@ManyToMany`, `V18`);
+  `VinculoConciliacaoService` reescrito (`saoCompativeis` — único ponto de verdade dos
+  critérios, usado por sugestão automática, confirmar, vincularManualmente e
+  `revalidarConciliacao`); `LancamentoFinanceiroService` — removidos os dois bloqueios baseados
+  em `AplicacaoDeLiquidacaoRepository`, `atualizar`/`cancelar` chamam `revalidarConciliacao` ao
+  final; `FaturaService#calcularPaga` substitui `pagar`; `ConsultasFinanceirasService.
+  calcularRealizado` somando Lançamentos conciliados. Frontend: `VinculoConciliacaoActions.tsx`
+  com lista de checkboxes (multi-Lançamento) substituindo o `SelectField` de Liquidação única;
+  `LancamentoTable.tsx` com badge binário e sem link "Ajustes"; `LancamentoListPage.tsx` com
+  filtros de Tipo/Status cobrindo "Contas a Pagar"/"Contas a Receber".
+- **Fase E (remoção final)**: `V19` aplicada e validada contra o banco de desenvolvimento real
+  (não só H2/mock — `HvieiraFinanceiroApplicationTests` sobe Flyway contra Postgres); todos os
+  arquivos backend (`domain`/`application`/`interfaces`) e frontend (`features/
+  liquidacao-financeira/`, `features/ajuste-financeiro/`, rotas, itens de menu) dos três módulos
+  removidos por completo. Hooks órfãos (`useLiquidacaoOptions.ts`, `useUsuarioOptions.ts`)
+  também removidos — sem mais nenhum consumidor depois da remoção das duas features.
+
+Build, testes e lint validados a cada checkpoint: backend 150/150 (166 antes da remoção das
+duas suítes dos módulos removidos), frontend 128/128 (141 antes da remoção das duas features) —
+`tsc`, `vitest` e `oxlint` limpos.
+
+Documentos atualizados: `decisions.md` (decisão #51, nova — formaliza a supersessão das
+decisões #1, #2, #8, B, #33/D12, #34/D13); `domain-model/09`, `10`, `11`, `12`, `14`, `15`,
+`17`, `19` (`08` também, `apelido`) — entidades removidas mantidas intactas com aviso de
+superação no topo (princípio 5), entidades vigentes atualizadas por completo;
+`modelagem-fisica/02`, `03`, `04`, `05`, `06`, `10`, `11`, `12`; `architecture/
+arquitetura-tecnica.md` (nota de topo, documento não reescrito linha a linha);
+`pendencias.md` (Seção 9); `roadmap.md`; `changelog.md`; `frontend/src/features/README.md`.
+
+**Situação da rodada de evolução**: Sprint 3 (das 5 totais, contando a Fase 1) concluída.
+Sprints 4-5 não iniciadas, aguardando confirmação explícita do usuário a cada uma. Também ainda
+pendente, sem prazo definido: a correção do achado de edição no meio do `CurrencyInput` (Seção
+26).
+
+**Próximo passo**: Sprint 4 — Obras (Obra como centro operacional, Medição de Obra com
+Faturamento Direto embutido, impostos, saldo contratual) — não iniciada nesta sessão.

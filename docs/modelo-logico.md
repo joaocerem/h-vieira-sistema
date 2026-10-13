@@ -1,6 +1,15 @@
 # Modelo Lógico
 ## Sistema Financeiro/Gerencial H Vieira Terraplanagem — Fase 3, Etapa 3.1
 
+> **Nota — Sprint 3 (rodada de evolução operacional).** Este documento é o artefato da Fase 3, Etapa 3.1 e não é atualizado linha a linha a cada sprint. `LIQUIDAÇÃO_FINANCEIRA`,
+> `APLICAÇÃO_DE_LIQUIDAÇÃO` e `AJUSTE_FINANCEIRO`, citadas em várias seções abaixo, foram
+> **removidas do sistema**, sem substituto equivalente — a confirmação de pagamento/recebimento
+> passou a ser exclusivamente a conciliação bancária (`VÍNCULO_CONCILIAÇÃO`, N:N com
+> `LANÇAMENTO_FINANCEIRO`; `FATURA.paga` passou a ser calculada, sem Liquidação). Ver `decisions.md`,
+> decisão #51 — fonte corrente para o estado vigente, que **prevalece** sobre as menções abaixo.
+> O schema vigente do banco é o das migrations Flyway (`backend/src/main/resources/db/migration/`,
+> V1–V19), não este modelo lógico.
+
 **Natureza deste documento**: primeiro artefato da Fase 3 (Modelagem Física do Banco de Dados). Traduz o modelo conceitual e as 24 entidades já congeladas na Fase 2 para uma forma lógica — mais próxima de uma estrutura de banco de dados, mas ainda **sem nenhuma decisão física**. Nenhuma linha de SQL, nenhum tipo de dado físico (`VARCHAR`, `NUMERIC`, etc.), nenhuma escolha de SGBD e nenhuma migration foram produzidos aqui.
 
 **Fontes de verdade, na ordem usada para esta tradução**: `architecture/arquitetura-conceitual.md` → `project-rules.md` → `principios-de-modelagem.md` → as 24 entidades em `domain-model/` → `architecture/arquitetura-tecnica.md` → `decisions.md` → `pendencias.md` → `freeze-fase-2.md`. Nenhum documento em `historico/` foi consultado como fonte de decisão.

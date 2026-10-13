@@ -14,9 +14,12 @@
 | `id` | Identificador | Sim | PK |
 | `conta_bancaria_id` | Identificador (FK) | Sim | → `contas_bancarias.id` |
 | `banco` | Texto curto | Sim | — |
-| `apelido` | Texto curto | Sim | — |
 | `dia_fechamento` | Numérico inteiro | Sim | — |
 | `dia_vencimento` | Numérico inteiro | Sim | — |
+
+> **Sprint 3 (rodada de evolução operacional, `V17__conta_bancaria_cartao_sem_apelido.sql`)**:
+> coluna `apelido` removida — identificação passa a ser Empresa + Banco (herdada da Conta
+> Bancária vinculada).
 
 ---
 
@@ -27,7 +30,7 @@
 - `fk_cartoes_credito_conta_bancaria` (`conta_bancaria_id` → `contas_bancarias.id`), `ON DELETE RESTRICT` — padrão de `arquitetura-fisica-banco.md` §7.
 
 ## NOT NULL
-`id`, `conta_bancaria_id`, `banco`, `apelido`, `dia_fechamento`, `dia_vencimento` — todos obrigatórios, sem exceção condicional.
+`id`, `conta_bancaria_id`, `banco`, `dia_fechamento`, `dia_vencimento` — todos obrigatórios, sem exceção condicional.
 
 ## UNIQUE
 Nenhuma — o conceitual não declara cadastro único para Cartão de Crédito.
@@ -40,7 +43,7 @@ Nenhum — nenhum campo tem valor padrão documentado.
 
 ## Índices previstos
 - Índice de FK padrão em `conta_bancaria_id` (critério base de B3, `decisions.md` decisão #37).
-- Nenhum índice adicional — nenhuma consulta ou regra já documentada usa `banco`/`apelido`/`dia_fechamento`/`dia_vencimento` como filtro/agregação frequente.
+- Nenhum índice adicional — nenhuma consulta ou regra já documentada usa `banco`/`dia_fechamento`/`dia_vencimento` como filtro/agregação frequente.
 
 ## Observações
 

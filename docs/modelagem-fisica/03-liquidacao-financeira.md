@@ -1,6 +1,12 @@
 # Modelagem Física — `LIQUIDAÇÃO_FINANCEIRA`
 ## Fase 3, Etapa 3.3.3
 
+> **SUPERADO — Sprint 3 (rodada de evolução operacional).** A tabela `liquidacoes_financeiras`
+> foi removida pela migração `V19__remove_liquidacao_financeira.sql`. Ver `decisions.md`,
+> decisão #51, e `modelagem-fisica/12-conciliacao-bancaria.md` (schema vigente da Conciliação
+> Bancária). Documento mantido intacto abaixo como retrato do schema físico entre a Fase 3 e a
+> Sprint 3 (princípio 5).
+
 Tabela: `liquidacoes_financeiras`. Categorias de tipo físico referenciam `arquitetura-fisica-banco.md`, Seção 5. Sem SQL.
 
 **Validação prévia**: realizada antes deste documento (ver mensagem anterior). D12 (mutabilidade) resolvida — imutável desde a criação (`decisions.md` decisão #33), tratado na Seção "Observações" abaixo. Nenhuma pendência aberta afeta esta tabela.

@@ -1,6 +1,15 @@
 # Arquitetura Física do Banco de Dados
 ## Sistema Financeiro/Gerencial H Vieira Terraplanagem — Fase 3, Etapa 3.2
 
+> **Nota — Sprint 3 (rodada de evolução operacional).** Este documento define as convenções físicas da Fase 3, Etapa 3.2 e não é atualizado linha a linha a cada sprint. As convenções (PostgreSQL, UUID, `ON DELETE RESTRICT` etc.) seguem vigentes; as referências às entidades abaixo, não. `LIQUIDAÇÃO_FINANCEIRA`,
+> `APLICAÇÃO_DE_LIQUIDAÇÃO` e `AJUSTE_FINANCEIRO`, citadas em várias seções abaixo, foram
+> **removidas do sistema**, sem substituto equivalente — a confirmação de pagamento/recebimento
+> passou a ser exclusivamente a conciliação bancária (`VÍNCULO_CONCILIAÇÃO`, N:N com
+> `LANÇAMENTO_FINANCEIRO`; `FATURA.paga` passou a ser calculada, sem Liquidação). Ver `decisions.md`,
+> decisão #51 — fonte corrente para o estado vigente, que **prevalece** sobre as menções abaixo.
+> O schema vigente do banco é o das migrations Flyway (`backend/src/main/resources/db/migration/`,
+> V1–V19). A pasta `database/` é material legado da Fase 3 (ver `database/README.md`).
+
 **SGBD oficial**: PostgreSQL. Decisão congelada nesta etapa (resolve `pendencias.md`, item B1) — sem alternativas em aberto.
 
 **Fontes de verdade**: `arquitetura-conceitual.md` → `project-rules.md` → `principios-de-modelagem.md` → `domain-model/` → `modelo-logico.md` → `arquitetura-tecnica.md` → `decisions.md` → `pendencias.md` → `freeze-fase-2.md`. Documentos em `historico/` não são fonte de decisão.

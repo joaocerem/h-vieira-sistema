@@ -1,6 +1,15 @@
 # Arquitetura Técnica — Frontend
 ## Sistema Financeiro/Gerencial H Vieira Terraplanagem
 
+> **Nota — Sprint 3 (rodada de evolução operacional).** As features `liquidacao-financeira/`,
+> `ajuste-financeiro/` e a ação "Pagar fatura" (`FaturaPagarForm`/página/rota) foram **removidas**
+> do Frontend, junto com `LIQUIDAÇÃO_FINANCEIRA`, `APLICAÇÃO_DE_LIQUIDAÇÃO` e `AJUSTE_FINANCEIRO`
+> no backend — a única confirmação de pagamento/recebimento passou a ser a conciliação bancária
+> (`decisions.md`, decisão #51). A estrutura de pastas e a tabela de features (Seções 3 e 10)
+> abaixo já refletem o estado vigente. A **Seção 11** (ordem de implementação) é registro
+> histórico de como o Frontend foi construído e **mantém** as menções originais a essas
+> features, marcadas como removidas onde aparecem.
+
 **Fonte de verdade das decisões que este documento sintetiza**: `decisions.md`, decisões #42
 e #44-#50 (T2, T7-T14, todas da Fase 5) — este documento não reabre nenhuma delas, só as
 organiza numa arquitetura coerente. Onde este documento e `decisions.md` divergirem em
@@ -42,7 +51,7 @@ código do Frontend foi criado. A implementação só começa depois deste docum
 
 O Frontend é uma **SPA desacoplada**, consumindo exclusivamente a API REST já implementada no
 backend (Fase 4). Ele nunca contém regra de negócio própria — toda regra (status calculado,
-rateio, ajuste, barreiras de confirmação da IA, escopo por Empresa) vive e é validada no
+rateio, barreiras de confirmação da IA, escopo por Empresa) vive e é validada no
 backend; o Frontend só apresenta, orquestra chamadas de API e cuida da experiência do usuário
 (`decisions.md`, decisão #50).
 
@@ -90,13 +99,11 @@ frontend/
         hooks/
         pages/
         types/
-      liquidacao-financeira/
       conciliacao-bancaria/
       cartao-credito/
       financiamento-consorcio/  → Contrato Financeiro (Financiamento/Consórcio)
       obra/
       frota/
-      ajuste-financeiro/
       balanco/
       cadastros-base/           → Empresa, Conta Bancária, Fornecedor, Cliente, Categoria
       usuarios/                 → cadastro/gestão de usuário (quando S2 existir)
@@ -170,14 +177,14 @@ Camada única (`decisions.md`, decisão #46): `shared/api/client.ts` — nenhuma
   (`parseFieldErrors`), com degradação graciosa se o formato mudar. Nenhuma alteração no
   backend foi feita — fora de escopo desta fase.
 - **Chamadas por módulo**: cada `features/<modulo>/api/` expõe funções tipadas específicas
-  daquele módulo (ex. `buscarLancamentos`, `criarLiquidacao`), todas construídas sobre a
+  daquele módulo (ex. `buscarLancamentos`, `vincularManualmente`), todas construídas sobre a
   instância de `shared/api/client` — nunca reimplementando configuração própria de HTTP.
 - **Padrão de validação de campo monetário (achado, Cadastros Base + Lançamento Financeiro)**:
   campo monetário sempre usa `z.coerce.number()` no schema Zod, nunca `register(campo, {
   valueAsNumber: true })` puro — um `<input type="number">` vazio, com `valueAsNumber`, vira
   `NaN` (`invalid_type`), e um `invalid_type` em qualquer campo do mesmo objeto faz o Zod 4
   pular `.superRefine()` do schema inteiro (achado original em `CartaoCreditoForm.tsx`,
-  confirmado de novo em `LancamentoForm.tsx`/`LiquidacaoForm.tsx`). Consequência prática
+  confirmado de novo em `LancamentoForm.tsx`). Consequência prática
   adicional: como `z.coerce.number()` muda o tipo de entrada do schema (`unknown`) em relação
   ao de saída (`number`), `useForm` precisa dos três generics —
   `useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>` — não só um. Exigência
@@ -343,12 +350,11 @@ Espelha diretamente os módulos já definidos no backend (`arquitetura-tecnica.m
 | `conta-bancaria/` ✅ | Cadastros Base | Seleciona Empresa na criação (`shared/hooks/useEmpresaOptions`) |
 | `cartao-credito/` ✅ (só o cadastro) | Cartão de Crédito | Seleciona Conta Bancária na criação. **Não inclui** Compra/Parcela/Fatura — módulo financeiro próprio, item 7 |
 | `usuario/` ✅ (nível básico) | Usuários e Permissões | Sem papel/escopo de Empresa — gestão completa é item 11, bloqueada por S1/S2 |
-| `lancamento-financeiro/`, `liquidacao-financeira/` ✅ | Financeiro (núcleo) | Cadeia central. **Sem `features/aplicacao-liquidacao/`** — Aplicação de Liquidação não tem endpoint HTTP próprio no backend; é um campo-array (`aplicacoes`) embutido na criação de Liquidação, refletido assim no Frontend também |
+| `lancamento-financeiro/` ✅ | Financeiro (núcleo) | Lançamento Financeiro. Sem `liquidacao-financeira/` nem `aplicacao-liquidacao/` — removidas na Sprint 3; "Conciliado"/"Não Conciliado" é o `statusFinanceiro` do Lançamento, calculado a partir do Vínculo Conciliação |
 | `conciliacao-bancaria/` ✅ | Conciliação Bancária | Isolado — nunca escreve em Lançamento. Três entidades (Movimentação, Transferência Interna, Vínculo Conciliação) numa só feature — sem tela própria de Vínculo (1:1 obrigatório com Movimentação, exibido na mesma tabela) |
-| `compra-cartao/`, `parcela/`, `fatura/` ✅ | Cartão de Crédito | Fluxo financeiro do cartão — distinto do cadastro (`cartao-credito/`, já implementado). `parcela/` sem `criar` (sistema gera); `fatura/` sem `criar`/`atualizar` genéricos (só `fecharCiclo`/`pagar`) |
+| `compra-cartao/`, `parcela/`, `fatura/` ✅ | Cartão de Crédito | Fluxo financeiro do cartão — distinto do cadastro (`cartao-credito/`, já implementado). `parcela/` sem `criar` (sistema gera); `fatura/` sem `criar`/`atualizar` genéricos (só `fecharCiclo`); sem ação "Pagar fatura" desde a Sprint 3 — `paga` é calculada a partir da conciliação |
 | `financiamento-consorcio/` ✅ | Financiamentos e Consórcios | Contrato Financeiro (`tipo` Financiamento/Consórcio; ação dedicada `contemplar`), reusando `features/parcela/` (filtro `?contratoFinanceiroId=`, real no backend) |
 | `obra/` ✅, `frota/` ✅ | Obras, Frota | CRUD; Obra com ação dedicada de transição de status (`POST .../status`, D9). Referenciados por `lancamento-financeiro/` (`obraId`/`veiculoId`, opcionais) |
-| `ajuste-financeiro/` ✅ | Ajuste Financeiro | Vincula dois Lançamentos já existentes — sem `atualizar`/`excluir` (imutável, D13); formulário só formaliza o vínculo, não cria o Lançamento de ajuste em si |
 | `balanco/` ✅ | Balanço (Realizado/Projetado) | Só leitura/agregação — um único endpoint (`GET /api/balanco?empresaId=`), sem tela de criar/editar |
 | `auditoria/` | Auditoria | Bloqueado até S4 (Seção 12) |
 | `ia/` | IA | Fora desta fase — Fase 6 |
@@ -384,6 +390,7 @@ decisão de `decisions.md` foi alterada ou reaberta.
    item 11, bloqueada por S1/S2; o fluxo financeiro do cartão (Compra, Parcela, Fatura)
    continua no item 7.
 4. **`lancamento-financeiro/`, `liquidacao-financeira/`** ✅ — cadeia financeira central.
+   **[`liquidacao-financeira/` REMOVIDA na Sprint 3 — registro histórico abaixo.]**
    **Sem `features/aplicacao-liquidacao/`** (ver Seção 10) — o array `aplicacoes`, dentro do
    formulário de criação de Liquidação, cobre isso por completo. Na primeira implementação,
    `obra`/`veiculo` ficaram de fora do formulário de Lançamento (campos opcionais no backend);
@@ -392,21 +399,21 @@ decisão de `decisions.md` foi alterada ou reaberta.
    Transferência Interna (criação + listagem) e Vínculo Conciliação (sem tela própria — 1:1
    obrigatório com Movimentação, ações de confirmar/marcar divergente/marcar sem
    correspondência/vincular manualmente/sugestão automática, todas embutidas na tabela de
-   Movimentação). Novo hook de referência compartilhado (`shared/hooks/useLiquidacaoOptions`),
-   mesmo padrão de `useLancamentoOptions`.
+   Movimentação). *(Histórico: um hook de referência `shared/hooks/useLiquidacaoOptions` foi criado
+   aqui e removido na Sprint 3 junto com a Liquidação.)*
 6. **`obra/`, `frota/`** ✅ — CRUD completo dos dois, incluindo a ação de transição de status
    de Obra (D9, `decisions.md` decisão #30, botões calculados a partir do mesmo mapa de
    transições do backend — `ObraStatusActions.tsx`). `features/lancamento-financeiro/`
    atualizada no mesmo lote para incluir seleção de Obra e de Veículo (este último filtrado
    pela Empresa selecionada, espelhando a validação do backend). `ajuste-financeiro/`
-   implementado em sessão posterior — ver item 8.1.
+   implementado em sessão posterior — ver item 8.1 (removido na Sprint 3).
 7. **`compra-cartao/`, `parcela/`, `fatura/`** ✅ (fluxo financeiro do cartão) —
    `compra-cartao/` CRUD (`cartaoId`/`valor`/`numeroParcelas` imutáveis após criar; correção de
    `categoria`/`obra`/`veículo` propaga para Lançamentos já gerados, D5); `parcela/` só leitura +
    ação `gerar-lancamento` (gatilho manual do "vencimento" — sem agendador automático no
    projeto), filtro por Compra Cartão sincronizado com a URL; `fatura/` sem criação/edição
-   genérica — só `fecharCiclo` (nasce já congelada) e `pagar` (cria Liquidação, que por sua vez
-   gera Movimentação Bancária/Vínculo automaticamente — mesma cadeia de `useCriarLiquidacao`).
+   genérica — só `fecharCiclo` (nasce já congelada). *(Histórico: havia também `pagar`, que criava
+   uma Liquidação; removido na Sprint 3 — `paga` passou a ser calculada a partir da conciliação.)*
    Novos hooks de referência compartilhados (`useCartaoCreditoOptions`,
    `useCompraCartaoOptions`, `useParcelaOptions`).
    **`financiamento-consorcio/`** ✅ — `ContratoFinanceiroController` seguido exatamente:
@@ -422,7 +429,8 @@ decisão de `decisions.md` foi alterada ou reaberta.
    própria. Primeira tela genuinamente "dashboard" do Frontend — reaproveita
    `shared/components/ui/card` (shadcn/ui, cadastrado desde o bootstrap, nunca consumido até
    aqui). `ResultadoCard` extraído por reuso real (seis instâncias na mesma página).
-8.1. **`ajuste-financeiro/`** ✅ — `AjusteFinanceiroController` seguido exatamente: único caso
+8.1. **`ajuste-financeiro/`** ✅ — **[REMOVIDO na Sprint 3 (decisão #51); registro histórico.]**
+   `AjusteFinanceiroController` seguido exatamente: único caso
    de uso de escrita é `criar` (sem `atualizar`/`excluir`, imutável desde a criação — D13,
    `decisions.md` decisão #34); o Lançamento de ajuste precisa já existir (criado via
    `features/lancamento-financeiro/`), este formulário só formaliza o vínculo. Reusa
