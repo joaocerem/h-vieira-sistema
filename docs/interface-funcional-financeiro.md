@@ -46,13 +46,13 @@ Este documento é a **referência oficial do Passo 2**.
 | Área | Status |
 |---|---|
 | **Contas a Pagar** | Interface funcional validada por protótipo e considerada **FECHADA**, exceto ajustes visuais/cosméticos que podem ocorrer na implementação final |
-| **Contas a Receber** | Em prototipação/validação neste momento |
-| **Conciliação** | Ainda não modelada no Passo 2 |
+| **Contas a Receber** | Interface funcional validada por protótipo e considerada **FECHADA**, exceto ajustes visuais/cosméticos que podem ocorrer na implementação final |
+| **Conciliação** | Ainda não modelada no Passo 2; próxima etapa de modelagem funcional |
 | **Cartão** | Ainda não modelado no Passo 2 |
 | **Medições** | Ainda não modeladas no Passo 2 |
 | **Balanço** | Ainda não modelado no Passo 2 |
 
-**O Passo 2 como um todo NÃO está fechado.** Apenas Contas a Pagar tem direção funcional aprovada.
+**O Passo 2 como um todo continua ABERTO.** Contas a Pagar e Contas a Receber têm direção funcional aprovada. Isso não significa frontend visual final, implementação real ou integração com backend concluídos.
 
 ---
 
@@ -235,23 +235,56 @@ Decisão importante: a edição **não** funciona como "clicar aleatoriamente em
 
 Existe uma ação explícita: **MODO DE EDIÇÃO**.
 
-**Estado normal:** a tabela está em modo de consulta.
+**Estado normal:** a tabela está em modo de consulta, sem ação de exclusão permanentemente exibida em cada linha.
 
 **Ao ativar o MODO DE EDIÇÃO:**
 
 - a grade passa a ser editável;
 - o usuário pode alterar várias linhas;
 - não precisa salvar uma por uma.
+- cada linha passa a exibir uma ação de exclusão na extremidade esquerda, representável por uma lixeira; a aparência exata do ícone não é definitiva.
 
 **Durante o modo aparecem:**
 
-- **SALVAR ALTERAÇÕES** — mantém todas as alterações e encerra o modo de edição.
-- **CANCELAR ALTERAÇÕES** — descarta todas as alterações feitas desde que o modo foi ativado, restaura o estado anterior e encerra o modo de edição.
+- **SALVAR ALTERAÇÕES** — confirma todas as edições e exclusões pendentes e encerra o modo de edição.
+- **CANCELAR ALTERAÇÕES** — descarta todas as alterações feitas desde que o modo foi ativado, restaura o estado anterior, inclusive linhas marcadas para exclusão, e encerra o modo de edição.
 
 Demais pontos:
 
 - Os campos do lançamento permanecem editáveis conforme aplicável.
 - **Não** é obrigatório existir botão de lápis individual em cada linha.
+
+### 12.1 Excluir lançamento
+
+A exclusão fica disponível de forma simples **somente dentro do Modo de Edição**, com confirmação antes de marcar a alteração como pendente.
+
+O texto da interface continua sendo **Excluir lançamento**. Sua semântica é **CANCELAMENTO LÓGICO**: o lançamento deixa a Agenda principal de pendências, mas o registro financeiro permanece preservado no sistema. Não significa apagar fisicamente o registro do banco de dados; não deve ser implementado `DELETE` físico do lançamento financeiro para atender essa ação. É coerente com a regra do projeto de não apagar lançamentos financeiros (`project-rules.md`). Não é necessário expor o termo técnico como ação principal ao usuário; não se define aqui estrutura de banco, status, endpoint, DTO ou implementação específica.
+
+- Para um lançamento comum, **Excluir lançamento** cancela logicamente somente aquele lançamento, retirando-o da Agenda ativa e preservando seu registro, sem afetar outros lançamentos.
+- Para uma parcela de série finita, como `24/48`, a mesma ação cancela logicamente somente aquela parcela independente; não cancela as demais nem encerra a série inteira.
+- Série finita não é recorrência: não oferece **Excluir recorrência** nem uma ação de cancelar todas as parcelas restantes. Esta última exigiria decisão separada.
+- Não estão previstos nesta etapa histórico de exclusão ou lixeira de recuperação.
+
+### 12.2 Excluir recorrência
+
+Quando a linha pertence a uma **recorrência sem fim definido**, a ação oferece duas opções distintas:
+
+- **Excluir lançamento** — cancela logicamente somente a ocorrência selecionada, que deixa a Agenda ativa, com registro preservado; as demais continuam normalmente e a recorrência continua ativa.
+- **Excluir recorrência** — encerra a recorrência **a partir da ocorrência selecionada**, com confirmação clara do alcance da ação.
+
+**Excluir recorrência** significa encerramento do futuro, sem apagar o histórico:
+
+- a ocorrência selecionada é cancelada logicamente, com registro preservado;
+- ocorrências futuras ainda pendentes daquela recorrência são canceladas logicamente ou deixam de ser geradas, conforme a estratégia técnica futura;
+- ocorrências anteriores permanecem preservadas;
+- itens já realizados anteriormente nunca são apagados por essa ação;
+- a recorrência não gera novas obrigações depois desse ponto.
+
+Nenhum histórico anterior deve ser apagado fisicamente. A representação técnica do encerramento no backend não é definida nesta etapa.
+
+### 12.3 Exclusão na sessão de edição
+
+Tanto **Excluir lançamento** quanto **Excluir recorrência** são alterações pendentes da mesma sessão de edição. A confirmação da ação não substitui **SALVAR ALTERAÇÕES**: somente ao salvar a sessão o cancelamento lógico e o encerramento pendentes são efetivados. Antes de salvar, **CANCELAR ALTERAÇÕES** restaura o estado existente quando o modo foi ativado, inclusive linhas marcadas para exclusão, e desfaz exclusões e encerramentos ainda não salvos. A implementação técnica desse comportamento não é definida aqui. Itens originados de outros fluxos têm a pendência específica da Seção 31.
 
 ---
 
@@ -455,6 +488,8 @@ Comportamento:
 - O protótipo atual pode simular um número limitado de ocorrências. **Esse limite NÃO é regra do sistema real.**
 - A estratégia técnica de geração futura fica para implementação posterior.
 
+O acesso funcional aprovado para encerrar a recorrência é **Excluir recorrência** no Modo de Edição, a partir da ocorrência selecionada (Seções 12.2 e 12.3).
+
 Regra de negócio de origem: Passo 1, Seção 5.4.
 
 ---
@@ -523,6 +558,7 @@ O protótipo foi criado para validar **FUNCIONALIDADE**. O frontend final será 
 - lançamento;
 - edição;
 - cancelamento de edição;
+- exclusão de lançamento e encerramento futuro de recorrência no Modo de Edição, conforme ajuste aprovado nas Seções 12.1–12.3;
 - rateio;
 - parcelas/recorrência;
 - filtros.
@@ -543,7 +579,120 @@ Significa apenas que, funcionalmente, existe uma **direção aprovada**.
 
 ## 29. CONTAS A RECEBER
 
-**Em prototipação e validação.**
+### 29.1 Objetivo da tela
+
+Contas a Receber é a **AGENDA de recebimentos futuros/esperados**. Pergunta principal:
+
+> "O que ainda está programado para receber?"
+
+- Mostra recebimentos ainda esperados/não confirmados.
+- Valor e data previstos permanecem editáveis enquanto forem projeção.
+- A confirmação do realizado vem futuramente pela **Conciliação Bancária**.
+- Não existe botão manual **Recebido**, **Marcar como recebido** ou equivalente.
+- Depois de confirmado pela Conciliação, o recebimento deixa a lista principal de pendências da agenda.
+
+Regra de negócio de origem: Passo 1, Seções 4 e 6.
+
+### 29.2 Separação e navegação
+
+Contas a Pagar e Contas a Receber continuam sendo **telas distintas** (Seções 4 e 5). Não há tabela única de entradas e saídas nem aba interna principal misturando as agendas.
+
+Podem compartilhar padrão visual e navegação. A navegação conceitual é **Contas a Pagar ↔ Contas a Receber** e, futuramente, **Contas a Pagar · Contas a Receber · Conciliação**. A estrutura visual definitiva continua aberta.
+
+### 29.3 Campos funcionais
+
+Campos aprovados para lançamento e visualização:
+
+- Data prevista;
+- Empresa;
+- Cliente;
+- Descrição;
+- Categoria;
+- Obra;
+- Documento/NF;
+- Valor.
+
+Não copiar recursos de Contas a Pagar por simetria. Os limites desta etapa estão na Seção 29.11.
+
+### 29.4 Lançamento rápido
+
+O recebimento esperado pode ser lançado **diretamente na própria tela**, sem página separada, fluxo longo ou navegação para outro módulo.
+
+A ação principal é **LANÇAR**. Ao lançar normalmente:
+
+1. cria o recebimento esperado;
+2. insere na Agenda de Contas a Receber;
+3. limpa o formulário rápido.
+
+### 29.5 Cliente e Categoria
+
+- **Cliente:** a base atual é pequena; seleção simples é suficiente. Não é necessário copiar automaticamente o autocomplete rápido de Fornecedor.
+- **Categoria:** deve ser selecionável de forma prática; reutilizar padrões existentes do sistema quando fizer sentido. O componente/interação específica não é requisito funcional aprovado nesta etapa: não se exige autocomplete específico, criação rápida ou comportamento idêntico ao Pagar, nem se proíbe reaproveitamento técnico futuro.
+
+Detalhes específicos dos componentes não são regras deste documento.
+
+### 29.6 Filtros e Total listado
+
+Filtros aprovados: **Empresa**, **Período/data**, **Cliente**, **Categoria** e **Obra**, com ação **Limpar filtros**.
+
+O **Total listado** acompanha os filtros aplicados e soma os lançamentos visíveis. Não adicionar busca geral redundante, dashboard, cards grandes, indicadores decorativos ou gráficos nesta etapa.
+
+### 29.7 Tabela e data prevista passada
+
+A tabela principal apresenta os campos da Seção 29.3, com **Valor** e **Data prevista** claramente visíveis. Deve ser compacta e legível; ajustes cosméticos ficam para a implementação final.
+
+Não é necessária uma coluna **Status = Pendente**, pois os itens da agenda já são pendências.
+
+Se a Data prevista já passou e o recebimento continua pendente, a tela **destaca discretamente que a previsão passou**, sem criar automaticamente o status comercial **Atrasado**. O usuário pode corrigir/remarcar a Data prevista durante a edição.
+
+### 29.8 Modo de Edição
+
+No estado normal, a tabela é de consulta. Ao ativar **MODO DE EDIÇÃO**, a grade passa a ser editável e várias linhas podem ser alteradas na mesma sessão.
+
+- **SALVAR ALTERAÇÕES** confirma as edições e exclusões pendentes e encerra o modo.
+- **CANCELAR ALTERAÇÕES** restaura o estado existente quando o modo foi ativado, inclusive linhas marcadas para exclusão, e encerra o modo.
+
+### 29.9 Exclusão de lançamento
+
+A ação de exclusão por linha aparece **somente no Modo de Edição**, na extremidade esquerda, representável por uma lixeira. A aparência exata do ícone não é definitiva.
+
+- A única opção atualmente aprovada é **Excluir lançamento**, com a mesma semântica de **cancelamento lógico** da Seção 12.1: somente aquele recebimento esperado deixa a Agenda ativa e seu registro permanece preservado no sistema, sem remoção física.
+- Deve haver confirmação; o recebimento é marcado para exclusão como alteração pendente. Somente **SALVAR ALTERAÇÕES** efetiva o cancelamento lógico.
+- **CANCELAR ALTERAÇÕES** desfaz a exclusão ainda não salva e restaura a linha.
+- Não inventar exclusão fora do Modo de Edição, histórico de exclusão ou lixeira de recuperação.
+
+**Recorrência não está aprovada em Contas a Receber nesta etapa.** Não oferecer **Excluir recorrência** nem adicionar recorrência para reutilizar o comportamento de Pagar. Uma aprovação futura poderá estender o fluxo.
+
+Para recebimentos originados de Medição ou de outros fluxos, o efeito da ação continua pendente, conforme a Seção 31; não aplicar automaticamente o comportamento do lançamento manual.
+
+### 29.10 Origem em Medição e outras entradas esperadas
+
+Para recebimento originado de **Medição**, a Agenda representa o **valor líquido esperado no banco**, conforme o Passo 1, Seções 4 e 9.2:
+
+| Composição conceitual | Valor |
+|---|---|
+| Valor total da Medição | R$ 100.000 |
+| Faturamento direto | R$ 20.000 |
+| Retenções | R$ 5.000 |
+| Recebimento esperado no banco / Agenda | **R$ 75.000** |
+
+A Agenda mostra R$ 75.000, sem perder a composição completa da Medição no Balanço gerencial. Essa composição pertence ao fluxo de Medição/Balanço; esta documentação não implementa nem modela a interface de Medição.
+
+Também pode haver recebimentos sem origem em Medição, quando forem entradas reais esperadas compatíveis com o Passo 1. Entrada de caixa não implica Receita gerencial: **transferência interna**, **liberação de financiamento** e **contemplação/carta de crédito** não se tornam Receita por aparecerem no caixa. Referências: Passo 1, Seções 4, 5.6 e 7.
+
+### 29.11 Fora da interface aprovada atualmente
+
+Não fazem parte desta etapa: **Veículo**, **Forma de pagamento**, **Parcela**, **geração de série**, **recorrência**, **rateio**, **botão manual de recebido**, **status Atrasado**, **dashboard** e **busca geral redundante**. Isso delimita a aprovação atual; não proíbe decisões futuras.
+
+### 29.12 Contas a Receber — status no Passo 2
+
+> **CONTAS A RECEBER — INTERFACE FUNCIONAL VALIDADA.**
+
+Foram validados funcionalmente: fluxo principal, lançamento rápido, campos, filtros, Modo de Edição, cancelamento de edição, exclusão de lançamento, destaque de data prevista passada, Total listado e separação em relação a Contas a Pagar.
+
+Isso **NÃO significa** frontend visual final, implementação real concluída ou integração com backend concluída. O protótipo validou fluxo, campos, ações, edição, filtros e praticidade de uso; a direção funcional está aprovada.
+
+**PROTÓTIPO FUNCIONAL ≠ FRONTEND VISUAL FINAL.** Cores, CSS, fonte, tamanhos, larguras exatas, espaçamentos, posição pixel a pixel, estilo de botões e aparência específica de selects/modais não são contrato visual definitivo (Seção 27).
 
 ---
 
@@ -553,7 +702,7 @@ Significa apenas que, funcionalmente, existe uma **direção aprovada**.
 
 ## 30. Próxima etapa prevista — Conciliação Bancária
 
-> **Esta seção é somente um INVENTÁRIO.** Não há desenho de interface, escolha de colunas, proposta de botões nem wireframe. Ela reúne, a partir de `fluxos-operacionais-definitivos.md`, as regras **já confirmadas** que a interface da Conciliação precisará respeitar quando for modelada, depois que Contas a Receber for validada. Nada aqui é decisão nova.
+> **Esta seção é somente um INVENTÁRIO.** Não há desenho de interface, escolha de colunas, proposta de botões nem wireframe. Ela reúne, a partir de `fluxos-operacionais-definitivos.md`, as regras **já confirmadas** que a interface da Conciliação precisará respeitar quando for modelada. Contas a Pagar e Contas a Receber estão funcionalmente validadas; a próxima etapa é a **MODELAGEM DA INTERFACE FUNCIONAL DA CONCILIAÇÃO**. Nada neste inventário é decisão nova.
 
 Referências entre parênteses indicam a seção do Passo 1.
 
@@ -647,11 +796,12 @@ Para evitar leitura excessiva do status da Seção 28, fica registrado o que **n
 
 - apresentação da **fatura de cartão** na Agenda (Passo 1, Seção 15);
 - cadastro de **financiamentos e consórcios** além da geração de parcelas em série (Passo 1, Seções 5.5 e 15);
-- forma de **encerrar uma recorrência** (apenas o comportamento esperado está registrado na Seção 23);
 - forma de registrar a parte própria e a parte financiada num pagamento de bem (Passo 1, Seção 15);
 - regras de **alerta/validação visual** do rateio inconsistente (apenas o princípio está registrado nas Seções 15 e 18).
 
 Esses pontos seguem em aberto no Passo 2.
+
+**Pendência — exclusão/cancelamento de itens originados de outros fluxos:** o efeito da ação sobre itens criados automaticamente ou originados de outros fluxos ainda não foi definido. Exemplos: fatura de cartão em Contas a Pagar e recebimento originado de Medição em Contas a Receber. Não assumir que esses itens podem ser cancelados como lançamentos manuais. Essa decisão será tomada na modelagem funcional de **Cartão** e **Medições** no Passo 2; até lá, não antecipar comportamento.
 
 ---
 
@@ -660,3 +810,4 @@ Esses pontos seguem em aberto no Passo 2.
 | Versão | Descrição |
 |---|---|
 | 1 | Criação. Registra Contas a Pagar como interface funcional validada; Contas a Receber em prototipação; Conciliação apenas como inventário de requisitos do Passo 1. |
+| 2 | Consolidação de Contas a Receber como interface funcional validada e ajuste aprovado de exclusão no Modo de Edição das agendas. Encerramento futuro de recorrência em Pagar definido; Conciliação é a próxima modelagem. Passo 2 permanece aberto, sem implementação técnica nesta atualização. |

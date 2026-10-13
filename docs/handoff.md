@@ -3,7 +3,7 @@
 
 > **LEIA PRIMEIRO — pontos de entrada atuais (adicionado após a Sprint 3).**
 > - `fluxos-operacionais-definitivos.md` — **fonte oficial atual das regras operacionais/de negócio aprovadas** (Passo 1); prevalece sobre a documentação técnica anterior em caso de conflito.
-> - `interface-funcional-financeiro.md` — **Passo 2**: decisões de interface funcional já validadas (Contas a Pagar validada; Contas a Receber em prototipação; Conciliação apenas inventário). Não define regras de negócio — estas pertencem ao documento de fluxos.
+> - `interface-funcional-financeiro.md` — **Passo 2**: Contas a Pagar e Contas a Receber funcionalmente validadas; Conciliação apenas inventário e próxima modelagem funcional. Não define regras de negócio — estas pertencem ao documento de fluxos. Estado documental recente na Seção 29 abaixo.
 > - O estado **mais recente** da implementação está na **Seção 28** deste documento (Sprint 3) e em `decisions.md`, decisão #51. As Seções 1 e 2 abaixo descrevem o estado ao final da Fase 3 e **não** foram reescritas.
 > - O schema vigente do banco são as migrations Flyway (`backend/src/main/resources/db/migration/`); `database/` é material legado (ver `database/README.md`).
 > - A implementação atual da Conciliação Bancária (Sprint 3) **ainda não está alinhada** às regras do Passo 1 (Seções 6.3–6.5: só Não conciliado/Conciliado, sugestão forte e aproximada, Empresa apenas auxiliar); a revisão foi adiada deliberadamente.
@@ -1100,3 +1100,23 @@ pendente, sem prazo definido: a correção do achado de edição no meio do `Cur
 
 **Próximo passo**: Sprint 4 — Obras (Obra como centro operacional, Medição de Obra com
 Faturamento Direto embutido, impostos, saldo contratual) — não iniciada nesta sessão.
+
+---
+
+## 29. NOTA — PASSO 2: PAGAR E RECEBER FUNCIONALMENTE VALIDADOS (2026-10-13)
+
+Atualização somente documental. A fonte oficial dessas decisões é
+`interface-funcional-financeiro.md`; o Passo 1 continua sendo a autoridade sobre regras de negócio.
+
+- **Contas a Pagar** permanece funcionalmente validada, com ajuste aprovado de exclusão no Modo de Edição (Seções 12.1–12.3 do Passo 2).
+- **Contas a Receber** agora também está funcionalmente validada (Seção 29 do Passo 2): agenda de recebimentos esperados, lançamento rápido, campos e filtros aprovados, Total listado, edição de várias linhas, cancelamento, exclusão e destaque discreto de data prevista passada. Confirmação do realizado pela Conciliação, sem botão manual de recebido ou status comercial Atrasado. Para Medição, a Agenda representa o líquido esperado no banco, conforme o Passo 1.
+- Nas duas agendas, a ação de exclusão por linha aparece somente no **Modo de Edição**, na extremidade esquerda. O texto **Excluir lançamento** significa **cancelamento lógico** somente do item escolhido: deixa a Agenda ativa, mas o registro financeiro é preservado, sem remoção física. A confirmação marca a alteração como pendente; somente **SALVAR ALTERAÇÕES** efetiva o cancelamento. **CANCELAR ALTERAÇÕES** restaura o estado inicial, inclusive linhas marcadas para exclusão.
+- Em Pagar, uma parcela finita oferece somente **Excluir lançamento**, cancelando logicamente apenas aquela parcela. Uma recorrência sem fim definido também oferece **Excluir recorrência**: encerra a partir da ocorrência selecionada, cancela-a logicamente e cancela logicamente o futuro ainda pendente ou deixa de gerá-lo; não gera novas ocorrências, preserva registros, ocorrências anteriores e itens já realizados anteriormente. O encerramento também fica pendente na sessão até salvar e pode ser desfeito ao cancelar.
+- **Recorrência não está aprovada em Receber**; a única opção de exclusão atual é **Excluir lançamento**. Não foram acrescentados parcela, série ou rateio por simetria com Pagar.
+- **Pendência:** o efeito da exclusão/cancelamento em itens automáticos ou originados de outros fluxos — especialmente fatura de Cartão e recebimento de Medição — será definido na modelagem funcional desses módulos. Não assumir cancelamento igual ao de lançamentos manuais. As demais decisões aprovadas de Pagar/Receber permanecem válidas.
+
+**O Passo 2 continua ABERTO.** Pagar e Receber estão fechados funcionalmente dentro do escopo validado; Conciliação, Cartão, Medições e Balanço ainda não têm interface modelada. Permanecem os limites explicitados na Seção 31 do Passo 2.
+
+**Próxima etapa funcional:** modelagem da interface funcional da **Conciliação Bancária**. A Seção 30 do Passo 2 permanece somente inventário, sem desenho de interface.
+
+**Nenhuma implementação real dessas novas interfaces foi feita nesta entrega.** A validação funcional não significa visual definitivo, frontend/backend concluídos ou integração pronta. Não houve alteração de código, migrations, testes, commit ou push nesta atualização documental. O histórico de implementação da Sprint 3 na Seção 28 permanece preservado.

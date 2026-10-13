@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-13
+
+### Documentação — Passo 2: agendas de Pagar e Receber
+
+- Consolidada a interface funcional validada de **Contas a Receber** em `interface-funcional-financeiro.md`: agenda, lançamento rápido, campos, filtros, Total listado, edição/cancelamento, exclusão e destaque de data prevista passada; Medição pelo líquido esperado, conforme o Passo 1.
+- Registrada a exclusão aprovada somente no **Modo de Edição** das agendas, com confirmação e efeito pendente até salvar; cancelar restaura exclusões. **Excluir lançamento** significa cancelamento lógico só do item/parcela, com preservação do registro financeiro e sem remoção física. Em Pagar, **Excluir recorrência** cancela logicamente a ocorrência selecionada e o futuro pendente ou deixa de gerá-lo, encerrando novas gerações e preservando o histórico anterior. Receber permanece sem recorrência aprovada.
+- Efeito da exclusão/cancelamento sobre itens originados de Cartão/Medição permanece pendente para a modelagem desses módulos. Ajustadas a terminologia **Valor total da Medição** e a redação neutra de Categoria em Receber, sem exigir interação específica.
+- **Pagar e Receber fechados funcionalmente** no escopo validado; **Passo 2 continua aberto**. Conciliação passa a ser a próxima modelagem funcional e sua seção permanece apenas inventário.
+- Atualização exclusivamente documental, refletida no handoff; não representa implementação de frontend/backend, integração concluída ou design visual definitivo.
+
 ## 2026-08-27
 
 ### Adicionado — Sprint 3: Fluxo Financeiro (rodada de evolução operacional)
